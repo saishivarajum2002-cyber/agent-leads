@@ -223,6 +223,29 @@ select.form-input option{background:var(--surface2)}
 /* MAP */
 #map{height:420px;border-radius:var(--radius);overflow:hidden;background:var(--surface2)}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* MOBILE RESPONSIVE CSS */
+@media (max-width: 900px) {
+  body { flex-direction: column; overflow: auto; min-height: 100vh; }
+  .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .nav { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; height: auto; }
+  .nav-item { width: auto; margin: 0; padding: 8px 12px; font-size: 13px; background: var(--surface2); }
+  .nav-sec { width: 100%; text-align: left; padding: 6px 4px; margin-top: 5px; }
+  .sidebar-footer { padding: 12px; text-align: center; }
+  .main { height: auto; overflow: visible; }
+  .topbar { flex-wrap: wrap; height: auto; padding: 14px; gap: 10px; }
+  .topbar-title { width: auto; flex: 1; }
+  .notif-btn { order: 2; margin-left: auto; }
+  #main-cta { order: 3; }
+  .search-box { width: 100%; order: 4; }
+  .content { padding: 16px; overflow: visible; }
+  .stats-grid, .dash-grid, .dash-grid.triple, .prop-grid, .pipe-cols, .mkt-grid, .team-grid, .settings-grid { grid-template-columns: 1fr; }
+  .card-body { overflow-x: auto; padding: 14px; }
+  #map { height: 300px; }
+  .modal { width: 95%; padding: 20px; }
+  .img-preview-grid { grid-template-columns: repeat(2, 1fr); }
+  .metric-row { flex-wrap: wrap; }
+  .metric-label { flex-basis: 100%; }
+}
 </style>
 </head>
 <body>
@@ -319,9 +342,9 @@ select.form-input option{background:var(--surface2)}
     <div class="panel" id="panel-pipeline">
       <div class="sec-head"><div class="sec-title">CRM Pipeline</div><button class="btn btn-primary" onclick="openModal('addLead')">+ Add Deal</button></div>
       <div class="pipe-cols">
-        <div class="pipe-col"><div class="pipe-col-head"> New Leads <span id="pipe-n-count" style="color:var(--muted);font-weight:400"></span></div><div id="pipe-new"></div></div>
-        <div class="pipe-col"><div class="pipe-col-head"> Negotiation <span id="pipe-g-count" style="color:var(--muted);font-weight:400"></span></div><div id="pipe-neg"></div></div>
-        <div class="pipe-col"><div class="pipe-col-head"> Closed <span id="pipe-c-count" style="color:var(--muted);font-weight:400"></span></div><div id="pipe-closed"></div></div>
+        <div class="pipe-col" ondragover="pipeDragOver(event)" ondrop="pipeDrop(event, 'New')"><div class="pipe-col-head" style="border-bottom:2px solid var(--blue)"> New Leads <span id="pipe-n-count" style="color:var(--text);font-weight:400;margin-left:4px"></span></div><div id="pipe-new" style="min-height:100px"></div></div>
+        <div class="pipe-col" ondragover="pipeDragOver(event)" ondrop="pipeDrop(event, 'Negotiation')"><div class="pipe-col-head" style="border-bottom:2px solid var(--accent)"> Negotiation <span id="pipe-g-count" style="color:var(--text);font-weight:400;margin-left:4px"></span></div><div id="pipe-neg" style="min-height:100px"></div></div>
+        <div class="pipe-col" ondragover="pipeDragOver(event)" ondrop="pipeDrop(event, 'Closed')"><div class="pipe-col-head" style="border-bottom:2px solid var(--green)"> Closed <span id="pipe-c-count" style="color:var(--text);font-weight:400;margin-left:4px"></span></div><div id="pipe-closed" style="min-height:100px"></div></div>
       </div>
     </div>
 
@@ -670,6 +693,10 @@ select.form-input option{background:var(--surface2)}
     <div class="modal-title" id="ld-title">Lead Details</div>
     <div class="modal-close" onclick="closeModal('leadDetail')">✕</div>
     <div id="ld-body"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn btn-primary" onclick="ldCall()" style="justify-content:center;background:var(--blue);color:#fff">📞 Call Lead</button>
+      <button class="btn btn-success" onclick="ldWhatsApp()" style="justify-content:center;background:var(--green);color:#000">💬 WhatsApp</button>
+    </div>
     <div class="form-group" style="margin-top:14px"><label class="form-label">Update Status</label><select class="form-input" id="ld-status"><option>New</option><option>Contacted</option><option>Closed</option></select></div>
     <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="ld-notes" style="resize:vertical;min-height:80px"></textarea></div>
     <div class="modal-footer"><button class="btn btn-danger btn-sm" onclick="deleteCurrentLead()">Delete</button><button class="btn btn-ghost" onclick="closeModal('leadDetail')">Close</button><button class="btn btn-primary" onclick="updateLead()">Save Changes</button></div>
@@ -696,6 +723,33 @@ select.form-input option{background:var(--surface2)}
 // All data stored in localStorage — works fully offline, no server
 // ================================================================
 
+async function syncFromDB() {
+  try {
+    const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
+    const email = creds ? creds.username : 'sarah@propedge.ae';
+    const res = await fetch('/api/sync?email=' + encodeURIComponent(email));
+    if (res.ok) {
+      const data = await res.json();
+      if (Object.keys(data).length > 0) {
+        for (const key in data) { localStorage.setItem(key, data[key]); }
+      }
+    }
+  } catch(e) {}
+}
+
+function syncToDB() {
+  try {
+    const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
+    const email = creds ? creds.username : 'sarah@propedge.ae';
+    const payload = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('pe_')) payload[key] = localStorage.getItem(key);
+    }
+    fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, data: payload }) }).catch(e=>{});
+  } catch(e) {}
+}
+
 const DB = {
   // Keys
   AGENT:'pe_agent', LEADS:'pe_leads', PROPERTIES:'pe_properties',
@@ -704,7 +758,7 @@ const DB = {
   // Get
   get(key){ try{ return JSON.parse(localStorage.getItem(key)||'null'); }catch(e){ return null; } },
   // Save
-  set(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); return true; }catch(e){ return false; } },
+  set(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); syncToDB(); return true; }catch(e){ return false; } },
 
   // Generic CRUD
   getAll(key){ return this.get(key)||[]; },
@@ -774,7 +828,8 @@ let editingPropId=null;
 // ================================================================
 // INIT
 // ================================================================
-function init(){
+async function init(){
+  await syncFromDB();
   DB.ensureAgent();
   state.agent    = DB.get(DB.AGENT)||{};
   state.leads    = DB.getAll(DB.LEADS);
@@ -891,10 +946,20 @@ function viewLead(id){
   const l=state.leads.find(x=>x.id===id);if(!l)return;
   currentLeadId=id;
   document.getElementById('ld-title').textContent=l.name;
-  document.getElementById('ld-body').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px"><div><div class="form-label">Phone</div><div style="font-weight:600">${l.phone||'—'}</div></div><div><div class="form-label">Email</div><div style="font-weight:600">${l.email||'—'}</div></div><div><div class="form-label">Property Interest</div><div style="font-weight:600">${l.property_interest||'—'}</div></div><div><div class="form-label">Source</div><div style="font-weight:600">${l.source||'—'}</div></div></div>`;
+  document.getElementById('ld-body').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px"><div><div class="form-label">Phone</div><div style="font-weight:600">${l.phone||'—'}</div></div><div><div class="form-label">Email</div><div style="font-weight:600">${l.email||'—'}</div></div><div style="grid-column:span 2"><div class="form-label">Property Interest</div><div style="font-weight:600">${l.property_interest||'—'}</div></div><div><div class="form-label">Source</div><div style="font-weight:600;display:inline-flex;align-items:center;background:rgba(255,255,255,.05);padding:2px 8px;border-radius:12px;margin-top:4px">${l.source||'—'}</div></div><div><div class="form-label">Score</div><div style="font-weight:600;color:var(--accent);font-size:16px">🔥 ${l.score||'—'}</div></div></div>`;
   document.getElementById('ld-status').value=l.status;
   document.getElementById('ld-notes').value=l.notes||'';
   openModal('leadDetail');
+}
+function ldCall() {
+  const l=state.leads.find(x=>x.id===currentLeadId);
+  if(!l||!l.phone) { toast('No phone number.', true); return; }
+  window.open('tel:'+l.phone, '_self');
+}
+function ldWhatsApp() {
+  const l=state.leads.find(x=>x.id===currentLeadId);
+  if(!l||!l.phone) { toast('No phone number.', true); return; }
+  openWhatsApp(l.phone);
 }
 
 function updateLead(){
@@ -933,8 +998,20 @@ function renderPipeline(){
   document.getElementById('pipe-g-count').textContent=`(${groups.Negotiation.length})`;
   document.getElementById('pipe-c-count').textContent=`(${groups.Closed.length})`;
   [['New','pipe-new'],['Negotiation','pipe-neg'],['Closed','pipe-closed']].forEach(([stage,elId])=>{
-    document.getElementById(elId).innerHTML=groups[stage].map(l=>`<div class="pipe-card" style="${stage==='Closed'?'border-color:rgba(46,204,138,.3)':''}" onclick="viewLead('${l.id}')"><div style="font-size:13px;font-weight:600">${l.name}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${l.property_interest||'—'}</div><div style="font-size:12px;color:${stage==='Closed'?'var(--green)':'var(--accent)'};margin-top:6px;font-weight:600">Score: ${l.score}${stage==='Closed'?' ✓':''}</div></div>`).join('')||`<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">No leads</div>`;
+    document.getElementById(elId).innerHTML=groups[stage].map(l=>`<div class="pipe-card" draggable="true" ondragstart="pipeDragStart(event,'${l.id}')" ondragend="this.style.opacity='1'" style="position:relative;${stage==='Closed'?'border-color:rgba(46,204,138,.3)':''}" onclick="viewLead('${l.id}')"><div style="font-size:13px;font-weight:600">${l.name}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${l.property_interest||'—'}</div><div style="font-size:12px;color:${stage==='Closed'?'var(--green)':'var(--accent)'};margin-top:6px;font-weight:600">Score: ${l.score}${stage==='Closed'?' ✓':''}</div></div>`).join('')||`<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px;border:1px dashed var(--border);border-radius:8px">Drop leads here</div>`;
   });
+}
+
+function pipeDragStart(e,id) { e.dataTransfer.setData('text/plain',id); e.target.style.opacity='0.4'; }
+function pipeDragOver(e) { e.preventDefault(); }
+function pipeDrop(e,stage) {
+  e.preventDefault();
+  const id=e.dataTransfer.getData('text/plain'); if(!id)return;
+  const lead=state.leads.find(l=>l.id===id); if(!lead)return;
+  const status=stage==='Closed'?'Closed':stage==='Negotiation'?'Contacted':'New';
+  DB.update(DB.LEADS,id,{pipeline_stage:stage,status});
+  state.leads=DB.getAll(DB.LEADS);
+  renderAll(); toast('Pipeline Updated!');
 }
 
 function setLeadFilter(f,el){
@@ -1021,7 +1098,9 @@ function renderProperties(){
   document.getElementById('prop-grid').innerHTML=filtered.map(p=>{
     const imgs=p.images&&p.images.length?p.images:[];
     const cover=imgs[0]||null;
-    return `<div class="prop-card"><div class="prop-img-area">${cover?`<img src="${cover}" alt="${p.name}" onerror="this.style.display='none'">`:''}${!cover?`<div class="prop-img-placeholder" style="background:${bg[p.status]||'#141c2a'}">${p.emoji||''}</div>`:''}<div class="prop-img-overlay"></div><div class="prop-img-tag"><span class="badge ${bc[p.status]||''}">${p.status}</span></div><div class="prop-price-tag">$${fmtNum(p.price)}</div>${imgs.length>1?`<div class="prop-photo-count">Photos: ${imgs.length}</div>`:''}</div>${imgs.length>0?`<div class="prop-thumbs">${imgs.slice(0,5).map((u,i)=>`<img class="prop-thumb" src="${u}" onclick="openLightbox(${JSON.stringify(imgs)},${i})" onerror="this.style.display='none'">`).join('')}${imgs.length>5?`<div class="prop-thumb-more" onclick="openLightbox(${JSON.stringify(imgs)},5)">+${imgs.length-5}</div>`:''}</div>`:''}<div class="prop-info"><div class="prop-name">${p.name}</div><div class="prop-addr">${p.address||'—'}</div><div class="prop-stats">${p.bedrooms?`<span class="prop-stat">Beds: ${p.bedrooms}</span>`:''}${p.bathrooms?`<span class="prop-stat">Baths: ${p.bathrooms}</span>`:''}${p.area_sqft?`<span class="prop-stat">Sqft: ${Number(p.area_sqft).toLocaleString()}</span>`:''}${p.views?`<span class="prop-stat">Views: ${p.views}</span>`:''}</div><div style="display:flex;gap:6px;margin-top:10px"><select class="form-input btn-sm" style="flex:1" onchange="updatePropertyStatus('${p.id}',this.value)"><option${p.status==='For Sale'?' selected':''}>For Sale</option><option${p.status==='Pending'?' selected':''}>Pending</option><option${p.status==='Sold'?' selected':''}>Sold</option></select><button class="btn btn-ghost btn-sm" title="Add images" onclick="openAddImagesModal('${p.id}')">Add Images</button><button class="btn btn-danger btn-sm" onclick="deleteProperty('${p.id}')">Delete</button></div></div></div>`;
+    const leadsCount=state.leads.filter(l=>(l.property_interest||'').includes(p.name)).length;
+    const leadBadge=leadsCount>0?`<div style="position:absolute;top:8px;right:8px;background:var(--accent);color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:12px;z-index:10;box-shadow:0 3px 10px rgba(0,0,0,.4)">🔥 ${leadsCount} Lead${leadsCount>1?'s':''}</div>`:'';
+    return `<div class="prop-card"><div class="prop-img-area">${leadBadge}${cover?`<img src="${cover}" alt="${p.name}" onerror="this.style.display='none'">`:''}${!cover?`<div class="prop-img-placeholder" style="background:${bg[p.status]||'#141c2a'}">${p.emoji||''}</div>`:''}<div class="prop-img-overlay"></div><div class="prop-img-tag"><span class="badge ${bc[p.status]||''}">${p.status}</span></div><div class="prop-price-tag">$${fmtNum(p.price)}</div>${imgs.length>1?`<div class="prop-photo-count">Photos: ${imgs.length}</div>`:''}</div>${imgs.length>0?`<div class="prop-thumbs">${imgs.slice(0,5).map((u,i)=>`<img class="prop-thumb" src="${u}" onclick="openLightbox(${JSON.stringify(imgs)},${i})" onerror="this.style.display='none'">`).join('')}${imgs.length>5?`<div class="prop-thumb-more" onclick="openLightbox(${JSON.stringify(imgs)},5)">+${imgs.length-5}</div>`:''}</div>`:''}<div class="prop-info"><div class="prop-name">${p.name}</div><div class="prop-addr">${p.address||'—'}</div><div class="prop-stats">${p.bedrooms?`<span class="prop-stat">Beds: ${p.bedrooms}</span>`:''}${p.bathrooms?`<span class="prop-stat">Baths: ${p.bathrooms}</span>`:''}${p.area_sqft?`<span class="prop-stat">Sqft: ${Number(p.area_sqft).toLocaleString()}</span>`:''}${p.views?`<span class="prop-stat">Views: ${p.views}</span>`:''}</div><div style="display:flex;gap:6px;margin-top:10px"><select class="form-input btn-sm" style="flex:1" onchange="updatePropertyStatus('${p.id}',this.value)"><option${p.status==='For Sale'?' selected':''}>For Sale</option><option${p.status==='Pending'?' selected':''}>Pending</option><option${p.status==='Sold'?' selected':''}>Sold</option></select><button class="btn btn-ghost btn-sm" title="Add images" onclick="openAddImagesModal('${p.id}')">Add Images</button><button class="btn btn-danger btn-sm" onclick="deleteProperty('${p.id}')">Delete</button></div></div></div>`;
   }).join('')||'<div class="table-empty" style="grid-column:span 3;padding:40px">No properties found</div>';
 }
 

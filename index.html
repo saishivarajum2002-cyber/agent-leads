@@ -325,9 +325,46 @@ footer{background:#0e0e0c;padding:60px 60px 32px}
 var DB={AGENT:'pe_agent',LEADS:'pe_leads',PROPERTIES:'pe_properties',NOTIFICATIONS:'pe_notifications'};
 function dg(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
 function da(k){return dg(k)||[];}
-function di(k,r){var a=da(k);r.id=r.id||(Date.now().toString(36)+Math.random().toString(36).slice(2,6));r.created_at=new Date().toISOString();a.unshift(r);try{localStorage.setItem(k,JSON.stringify(a));}catch(e){}return r;}
+
+async function syncFromDB() {
+  try {
+    const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
+    const email = creds ? creds.username : 'sarah@propedge.ae';
+    const res = await fetch('/api/sync?email=' + encodeURIComponent(email));
+    if (res.ok) {
+      const data = await res.json();
+      if (Object.keys(data).length > 0) {
+        for (const key in data) { localStorage.setItem(key, data[key]); }
+      }
+    }
+  } catch(e) {}
+}
+function syncToDB() {
+  try {
+    const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
+    const email = creds ? creds.username : 'sarah@propedge.ae';
+    const payload = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('pe_')) payload[key] = localStorage.getItem(key);
+    }
+    fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, data: payload }) }).catch(e=>{});
+  } catch(e) {}
+}
+
+function di(k,r){var a=da(k);r.id=r.id||(Date.now().toString(36)+Math.random().toString(36).slice(2,6));r.created_at=new Date().toISOString();a.unshift(r);try{localStorage.setItem(k,JSON.stringify(a));syncToDB();}catch(e){}return r;}
 var agent={},props=[],cf='all',mImgs=[],mIdx=0,mapInited=false,sm=null;
-function init(){
+async function init(){
+  await syncFromDB();
+  if(!da(DB.PROPERTIES).length){
+    var demoProps = [
+        {name:'Skyview Residences',address:'Downtown, Dubai',price:1200000,bedrooms:'3',bathrooms:'2',area_sqft:2100,status:'For Sale',emoji:'Apartment',views:234,description:"Masterpiece of modern architecture set against Dubai's skyline.",images:['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&q=80','https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80','https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&q=80'],latitude:25.2048,longitude:55.2708},
+        {name:'Marina Tower Suite',address:'Dubai Marina',price:850000,bedrooms:'2',bathrooms:'2',area_sqft:1450,status:'For Sale',emoji:'Apartment',views:189,description:'Uninterrupted sea views with wraparound balcony.',images:['https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&q=80','https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=600&q=80'],latitude:25.0804,longitude:55.1403},
+        {name:'Palm Villa Estate',address:'Palm Jumeirah',price:2400000,bedrooms:'5+',bathrooms:'5+',area_sqft:6800,status:'Pending',emoji:'Villa',views:312,description:'Extraordinary beachfront villa with private beach and infinity pool.',images:['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80','https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=600&q=80','https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&q=80','https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&q=80'],latitude:25.1124,longitude:55.1390},
+        {name:'Downtown Loft',address:'Business Bay',price:420000,bedrooms:'1',bathrooms:'1',area_sqft:750,status:'Sold',emoji:'Apartment',views:145,description:'Sophisticated urban loft in the heart of Business Bay.',images:['https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=600&q=80'],latitude:25.1901,longitude:55.2643}
+    ];
+    demoProps.forEach(function(p){di(DB.PROPERTIES, p);});
+  }
   agent=dg(DB.AGENT)||{name:'Sarah Al-Rashid',email:'sarah@propedge.ae',phone:'+971 50 123 4567',agency_name:'PropEdge Realty',license_number:'RE-2024-00847'};
   props=da(DB.PROPERTIES);
   updateAgent();updateStats();renderProps();initMap();initFade();checkSession();
