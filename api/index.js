@@ -137,7 +137,7 @@ app.post('/api/create-meeting', async (req, res) => {
   }
 });
 
-// 4. AI Tool: Generate Property Description
+// AI Tool: Generate Property Description
 app.post('/api/ai/description', async (req, res) => {
   try {
     const { details } = req.body;
@@ -153,7 +153,30 @@ app.post('/api/ai/description', async (req, res) => {
   }
 });
 
-// 5. Sync Endpoints
+// Dedicated Lead Notification Endpoint
+app.post('/api/notify-lead', async (req, res) => {
+  try {
+    const { agentEmail, lead } = req.body;
+    if (!agentEmail || !lead) return res.status(400).json({ error: 'agentEmail and lead required' });
+    
+    console.log(`🔔 Lead notification for ${agentEmail}`);
+    
+    const emailResult = await sendEmail({
+      to: agentEmail,
+      subject: `🔔 New Lead: ${lead.name}`,
+      message: `Hi,\n\nYou have a new lead!\n\n👤 Name: ${lead.name}\n📞 Phone: ${lead.phone || 'N/A'}\n🏠 Property Interest: ${lead.property_interest || 'N/A'}\n\nLog in to your dashboard to take action.`
+    });
+    
+    await pushNotification(agentEmail, 'new_lead', `New lead: ${lead.name}`);
+    
+    res.json({ success: true, emailSent: emailResult.success });
+  } catch (error) {
+    console.error('Notify Lead Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Sync Endpoints
 app.get('/api/sync', async (req, res) => {
   try {
     const { email } = req.query;
@@ -161,7 +184,8 @@ app.get('/api/sync', async (req, res) => {
     const snapshot = await DataSnapshot.findOne({ email });
     res.json(snapshot && snapshot.data ? snapshot.data : {});
   } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
+    console.error('Sync GET Error:', error.message);
+    res.status(500).json({ error: 'Database Error: ' + error.message });
   }
 });
 
@@ -169,10 +193,27 @@ app.post('/api/sync', async (req, res) => {
   try {
     const { email, data } = req.body;
     if (!email || !data) return res.status(400).json({ error: 'Email and data required' });
+    
+    // Check for new leads to notify agent
+    const oldSnapshot = await DataSnapshot.findOne({ email });
+    const oldLeads = oldSnapshot ? JSON.parse(oldSnapshot.data.pe_leads || '[]') : [];
+    const newLeads = JSON.parse(data.pe_leads || '[]');
+    
+    if (newLeads.length > oldLeads.length) {
+      const lead = newLeads[0];
+      await sendEmail({
+        to: email,
+        subject: `🔔 New Lead: ${lead.name}`,
+        message: `Hi,\n\nYou have a new lead!\n\nName: ${lead.name}\nPhone: ${lead.phone || 'N/A'}\nProperty: ${lead.property_interest}\n\nCheck your dashboard for more details.`
+      });
+      await pushNotification(email, 'new_lead', `New lead: ${lead.name}`);
+    }
+
     await DataSnapshot.findOneAndUpdate({ email }, { email, data }, { upsert: true });
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
+    console.error('Sync POST Error:', error.message);
+    res.status(500).json({ error: 'Database Error: ' + error.message });
   }
 });
 
