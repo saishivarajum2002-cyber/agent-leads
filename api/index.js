@@ -194,19 +194,32 @@ app.post('/api/sync', async (req, res) => {
     const { email, data } = req.body;
     if (!email || !data) return res.status(400).json({ error: 'Email and data required' });
     
-    // Check for new leads to notify agent
+    // Check for new leads to notify agent (Safe parsing)
     const oldSnapshot = await DataSnapshot.findOne({ email });
-    const oldLeads = oldSnapshot ? JSON.parse(oldSnapshot.data.pe_leads || '[]') : [];
-    const newLeads = JSON.parse(data.pe_leads || '[]');
+    
+    const getLeads = (snapshotData) => {
+      const val = snapshotData && snapshotData.pe_leads;
+      if (!val) return [];
+      if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch(e) { return []; }
+      }
+      return val;
+    };
+
+    const oldLeads = getLeads(oldSnapshot ? oldSnapshot.data : null);
+    const newLeads = getLeads(data);
     
     if (newLeads.length > oldLeads.length) {
       const lead = newLeads[0];
-      await sendEmail({
-        to: email,
-        subject: `🔔 New Lead: ${lead.name}`,
-        message: `Hi,\n\nYou have a new lead!\n\nName: ${lead.name}\nPhone: ${lead.phone || 'N/A'}\nProperty: ${lead.property_interest}\n\nCheck your dashboard for more details.`
-      });
-      await pushNotification(email, 'new_lead', `New lead: ${lead.name}`);
+      if (lead && lead.name) {
+        console.log(`📨 New lead detected for ${email}: ${lead.name}`);
+        const emailResult = await sendEmail({
+          to: email,
+          subject: `🔔 New Lead: ${lead.name}`,
+          message: `Hi,\n\nYou have a new lead!\n\nName: ${lead.name}\nPhone: ${lead.phone || 'N/A'}\nProperty: ${lead.property_interest || 'N/A'}\n\nCheck your dashboard for more details.`
+        });
+        await pushNotification(email, 'new_lead', `New lead: ${lead.name}`);
+      }
     }
 
     await DataSnapshot.findOneAndUpdate({ email }, { email, data }, { upsert: true });
