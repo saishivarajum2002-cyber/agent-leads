@@ -9,23 +9,26 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Saishivaraju/DEMO-for-agent-WEB.git"
+    "url": "git+https://github.com/saishivarajum2002-cyber/agent-leads-generating-website.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Saishivaraju/DEMO-for-agent-WEB/issues"
+    "url": "https://github.com/saishivarajum2002-cyber/agent-leads-generating-website/issues"
   },
-  "homepage": "https://github.com/Saishivaraju/DEMO-for-agent-WEB#readme",
+  "homepage": "https://github.com/saishivarajum2002-cyber/agent-leads-generating-website#readme",
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.0",
-    "axios": "^1.13.6",
-    "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "googleapis": "^171.4.0",
-    "mongoose": "^9.3.1",
-    "resend": "^6.9.4"
+    "@supabase/supabase-js": "^2.10.0",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.0",
+    "express": "^4.18.2",
+    "googleapis": "^126.0.0",
+    "mongoose": "^8.0.0",
+    "resend": "^3.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
   }
 }
