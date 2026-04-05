@@ -17,22 +17,35 @@ const { generateDescription } = require('../services/ai');
 // Constants
 const MONGODB_URI = process.env.MONGODB_URI;
 
-// Lazy MongoDB Connection (Serverless best practice)
-let isConnected = false;
+// Connection Cache (Serverless best practice)
+let cachedConnection = null;
+
 const connectDB = async () => {
-  if (isConnected) return;
+  if (cachedConnection) return cachedConnection;
+
   if (!MONGODB_URI) {
-    console.error('❌ MONGODB_URI is missing in environment variables!');
-    return;
+    const errorMsg = '❌ MONGODB_URI is missing in environment variables!';
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
+
   try {
-    const db = await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of hanging
-    });
-    isConnected = db.connections[0].readyState === 1;
+    // Basic connection options
+    const options = {
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s
+      socketTimeoutMS: 45000,         // Close sockets after 45s of inactivity
+    };
+
+    console.log('⏳ Connecting to MongoDB Atlas...');
+    cachedConnection = await mongoose.connect(MONGODB_URI, options);
     console.log('✅ MongoDB Connected to Atlas');
+    return cachedConnection;
   } catch (err) {
+    cachedConnection = null; // Reset on failure
     console.error('❌ MongoDB Connection Error:', err.message);
+    if (err.message.includes('IP not whitelisted')) {
+      console.error('👉 ACTION REQUIRED: Add 0.0.0.0/0 to your MongoDB Atlas Network Access.');
+    }
     throw err;
   }
 };
@@ -43,7 +56,12 @@ app.use(async (req, res, next) => {
     await connectDB();
     next();
   } catch (err) {
-    res.status(500).json({ error: 'Database Connection Failed', details: err.message });
+    const isWhitelistedError = err.message.includes('IP not whitelisted');
+    res.status(500).json({ 
+      error: 'Database Connection Failed', 
+      details: err.message,
+      suggestion: isWhitelistedError ? 'Update MongoDB Atlas Network Access to allow all IPs (0.0.0.0/0)' : 'Check environment variables and Atlas status'
+    });
   }
 });
 
