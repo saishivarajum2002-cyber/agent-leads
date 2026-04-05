@@ -47,8 +47,8 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:400;line-height:1.15
 .sticky-btn{font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:11px 24px;border:none;cursor:pointer;font-family:'Jost',sans-serif;transition:all .2s}
 .sticky-btn-gold{background:var(--gold);color:var(--dark)}.sticky-btn-gold:hover{background:var(--goldl)}
 .sticky-btn-out{background:transparent;color:var(--goldl);border:1px solid rgba(184,150,90,.4)}.sticky-btn-out:hover{border-color:var(--gold);color:var(--gold)}
-.lpop-wrap{display:none;position:fixed;inset:0;background:rgba(5,5,4,.8);backdrop-filter:blur(14px);z-index:500;align-items:center;justify-content:center;padding:20px}
-.lpop-wrap.open{display:flex}
+.lpop-wrap{display:none;position:fixed;inset:0;background:rgba(5,5,4,.8);backdrop-filter:blur(14px);z-index:500;align-items:center;justify-content:center;padding:20px;pointer-events:none}
+.lpop-wrap.open{display:flex;pointer-events:auto}
 .lpop{background:#111110;border:1px solid rgba(184,150,90,.2);width:100%;max-width:440px;position:relative}
 .lpop-img{background:url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=70') center/cover;height:150px}
 .lpop-body{padding:26px 28px 24px}
@@ -58,7 +58,7 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:400;line-height:1.15
 .lpop-in{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:11px 14px;color:#faf8f4;font-size:13px;font-family:'Jost',sans-serif;outline:none;transition:border-color .2s;margin-bottom:10px}
 .lpop-in:focus{border-color:rgba(184,150,90,.5)}
 .lpop-in::placeholder{color:rgba(255,255,255,.25)}
-.lpop-sub-btn{width:100%;background:var(--gold);color:var(--dark);border:none;padding:13px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;margin-top:4px}
+.lpop-sub-btn{width:100%;background:var(--gold);color:var(--dark);border:none;padding:13px;font-family:'Jost',sans-serif;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;margin-top:4px;position:relative;z-index:999;pointer-events:auto}
 .lpop-sub-btn:hover{background:var(--goldl)}
 .lpop-x{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.5);border:none;color:rgba(255,255,255,.6);font-size:15px;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .lpop-x:hover{color:#fff}
@@ -141,7 +141,7 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:400;line-height:1.15
 .test-av{width:40px;height:40px;border-radius:50%;background:var(--dark);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:.95rem}
 .test-nm{font-weight:500;font-size:13px;color:var(--dark)}
 .test-rl{font-size:11px;color:var(--muted)}
-.ci{max-width:600px;margin:0 auto;text-align:center}
+.ci{max-width:600px;margin:0 auto;text-align:center;position:relative;z-index:10}
 .ci h2{color:#faf8f4;margin-bottom:14px;font-size:2.8rem}
 .ci>p{color:rgba(255,255,255,.5);margin-bottom:44px;font-size:15px;line-height:1.8}
 .c-form{display:flex;flex-direction:column;gap:12px;text-align:left}
@@ -150,7 +150,7 @@ h1,h2,h3{font-family:'Cormorant Garamond',serif;font-weight:400;line-height:1.15
 .c-in:focus{border-color:var(--gold)}
 .c-in::placeholder{color:rgba(255,255,255,.28)}
 .c-in option{background:var(--dark)}
-.c-sub{background:var(--gold);color:var(--dark);border:none;padding:16px;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:6px}
+.c-sub{background:var(--gold);color:var(--dark);border:none;padding:16px;font-family:'Jost',sans-serif;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:6px;position:relative;z-index:999;pointer-events:auto}
 .c-sub:hover{background:var(--goldl)}
 .c-ok{display:none;text-align:center;padding:40px;color:#2ecc8a;font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-style:italic}
 footer{background:#0e0e0c;padding:60px 60px 32px}
