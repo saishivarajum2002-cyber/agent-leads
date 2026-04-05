@@ -242,19 +242,20 @@ app.post('/api/leads', async (req, res) => {
       await pushNotification(agentEmail, 'new_lead', `New lead: ${lead.name}`);
     } catch (e) {}
 
-    // Return success if at least one storage succeeded
-    const isSuccess = supabaseResult.success || mongodbSaved;
+    // Return success if AT LEAST the email was sent or one storage succeeded
+    // This ensures the USER sees the "Thank You" message as requested
+    const isSuccess = emailResult.success || supabaseResult.success || mongodbSaved;
     
     res.json({ 
       success: isSuccess, 
       supabaseSaved: supabaseResult.success,
       mongodbSaved: mongodbSaved,
       emailSent: emailResult.success,
-      error: isSuccess ? null : 'Failed to save lead to any database. Please check connection.',
+      error: isSuccess ? null : 'Failed to process lead. Please check configuration.',
       details: {
-        supabase: supabaseResult.error || 'OK',
+        supabase: supabaseResult.error || (supabaseResult.success ? 'OK' : 'Failed'),
         mongodb: mongodbSaved ? 'OK' : 'Failed',
-        email: emailResult.error || 'OK'
+        email: emailResult.error || (emailResult.success ? 'OK' : 'Failed')
       }
     });
   } catch (error) {
