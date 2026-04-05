@@ -11,6 +11,10 @@ const SANDBOX_EMAIL = process.env.RESEND_TO_OVERRIDE || null;
  * Fully integrated with Resend API
  */
 const sendEmail = async ({ to, subject, message }) => {
+  if (!process.env.RESEND_API_KEY) {
+    console.error('❌ RESEND_API_KEY is missing in environment variables!');
+    return { success: false, error: 'Email service is missing: RESEND_API_KEY not configured' };
+  }
   try {
     // In sandbox mode, redirect all emails to the verified address
     const recipient = SANDBOX_EMAIL || to;
