@@ -551,7 +551,11 @@ function submitLead(){
       document.getElementById('c-ok').style.display='block';
       st('Inquiry sent! Agent notified via Resend.');
     } else {
-      st('Error sending inquiry: ' + (data.error || 'Unknown error'), true);
+      let errStr = data.error || 'Unknown Error';
+      if (data.details) {
+        errStr += ' (Supabase: ' + data.details.supabase + ', Mongo: ' + data.details.mongodb + ')';
+      }
+      st('Error: ' + errStr, true);
     }
   })
   .catch(e => {

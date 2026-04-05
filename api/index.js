@@ -250,8 +250,12 @@ app.post('/api/leads', async (req, res) => {
       supabaseSaved: supabaseResult.success,
       mongodbSaved: mongodbSaved,
       emailSent: emailResult.success,
-      emailError: emailResult.error || null,
-      message: isSuccess ? 'Lead processed' : 'Failed to save lead to any database'
+      error: isSuccess ? null : 'Failed to save lead to any database. Please check connection.',
+      details: {
+        supabase: supabaseResult.error || 'OK',
+        mongodb: mongodbSaved ? 'OK' : 'Failed',
+        email: emailResult.error || 'OK'
+      }
     });
   } catch (error) {
     console.error('Lead Submission Critical Error:', error.message);
