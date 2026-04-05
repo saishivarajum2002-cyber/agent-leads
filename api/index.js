@@ -202,39 +202,59 @@ app.post('/api/leads', async (req, res) => {
     console.log(`📩 Processing lead for ${agentEmail}: ${lead.name}`);
 
     // 1. Save to Supabase (Primary)
-    const supabaseResult = await saveLeadToSupabase(lead);
+    let supabaseResult = { success: false, error: 'Not attempted' };
+    try {
+      supabaseResult = await saveLeadToSupabase(lead);
+    } catch (e) { console.error('Supabase Error:', e.message); }
     
     // 2. Save to MongoDB (Backup / Snapshot)
-    let snapshot = await DataSnapshot.findOne({ email: agentEmail });
-    if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: { pe_leads: [] } });
-    if (!snapshot.data) snapshot.data = {};
-    if (!snapshot.data.pe_leads) snapshot.data.pe_leads = [];
-    
-    lead.created_at = lead.created_at || new Date().toISOString();
-    lead.id = lead.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
-    
-    snapshot.data.pe_leads.unshift(lead);
-    snapshot.markModified('data');
-    await snapshot.save();
+    let mongodbSaved = false;
+    try {
+      let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+      if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: { pe_leads: [] } });
+      if (!snapshot.data) snapshot.data = {};
+      if (!snapshot.data.pe_leads) snapshot.data.pe_leads = [];
+      
+      lead.created_at = lead.created_at || new Date().toISOString();
+      lead.id = lead.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+      
+      snapshot.data.pe_leads.unshift(lead);
+      snapshot.markModified('data');
+      await snapshot.save();
+      mongodbSaved = true;
+    } catch (e) { console.error('MongoDB Error:', e.message); }
 
     // 3. Send Notification Email via Resend (Crucial)
-    const emailResult = await sendEmail({
-      to: agentEmail,
-      subject: `🔔 New Lead: ${lead.name}`,
-      message: `Hi,\n\nYou have a new lead!\n\n👤 Name: ${lead.name}\n📞 Phone: ${lead.phone || 'N/A'}\n📧 Email: ${lead.email || 'N/A'}\n🏠 Interest: ${lead.property_interest || 'N/A'}\n📝 Notes: ${lead.notes || 'N/A'}\n\nLog in to your dashboard to take action.`
-    });
+    let emailResult = { success: false, error: 'Not attempted' };
+    try {
+      emailResult = await sendEmail({
+        to: agentEmail,
+        subject: `🔔 New Lead: ${lead.name}`,
+        message: `Hi,\n\nYou have a new lead!\n\n👤 Name: ${lead.name}\n📞 Phone: ${lead.phone || 'N/A'}\n📧 Email: ${lead.email || 'N/A'}\n🏠 Interest: ${lead.property_interest || 'N/A'}\n📝 Notes: ${lead.notes || 'N/A'}\n\nLog in to your dashboard to take action.`
+      });
+    } catch (e) { 
+      console.error('Email Error:', e.message);
+      emailResult.error = e.message;
+    }
 
     // 4. Push Notification
-    await pushNotification(agentEmail, 'new_lead', `New lead: ${lead.name}`);
+    try {
+      await pushNotification(agentEmail, 'new_lead', `New lead: ${lead.name}`);
+    } catch (e) {}
 
+    // Return success if at least one storage succeeded
+    const isSuccess = supabaseResult.success || mongodbSaved;
+    
     res.json({ 
-      success: true, 
+      success: isSuccess, 
       supabaseSaved: supabaseResult.success,
-      mongodbSaved: true,
-      emailSent: emailResult.success 
+      mongodbSaved: mongodbSaved,
+      emailSent: emailResult.success,
+      emailError: emailResult.error || null,
+      message: isSuccess ? 'Lead processed' : 'Failed to save lead to any database'
     });
   } catch (error) {
-    console.error('Lead Submission Error:', error.message);
+    console.error('Lead Submission Critical Error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
