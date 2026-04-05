@@ -193,7 +193,62 @@ app.post('/api/ai/description', async (req, res) => {
   }
 });
 
-// Dedicated Lead Notification Endpoint
+// Unified Lead Submission & Notification
+app.post('/api/leads', async (req, res) => {
+  try {
+    const { agentEmail, lead } = req.body;
+    if (!agentEmail || !lead) return res.status(400).json({ error: 'agentEmail and lead required' });
+
+    // 1. Atomic Save Lead to Snapshot
+    let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+    if (!snapshot) {
+      snapshot = new DataSnapshot({ email: agentEmail, data: { pe_leads: [] } });
+    }
+    
+    // Ensure data structure exists
+    if (!snapshot.data) snapshot.data = {};
+    if (!snapshot.data.pe_leads) {
+      // Check if it's a string (old storage format) or missing
+      if (typeof snapshot.data.pe_leads === 'string') {
+        snapshot.data.pe_leads = JSON.parse(snapshot.data.pe_leads);
+      } else {
+        snapshot.data.pe_leads = [];
+      }
+    }
+    
+    // Ensure lead has IDs and timestamps
+    lead.created_at = lead.created_at || new Date().toISOString();
+    lead.id = lead.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
+    
+    // Add to front of list
+    snapshot.data.pe_leads.unshift(lead);
+    snapshot.markModified('data');
+    await snapshot.save();
+
+    console.log(`✅ Lead saved and notifying agent: ${agentEmail}`);
+
+    // 2. Send Notification Email via Resend
+    const emailResult = await sendEmail({
+      to: agentEmail,
+      subject: `🔔 New Lead: ${lead.name}`,
+      message: `Hi,\n\nYou have a new lead!\n\n👤 Name: ${lead.name}\n📞 Phone: ${lead.phone || 'N/A'}\n📧 Email: ${lead.email || 'N/A'}\n🏠 Interest: ${lead.property_interest || 'N/A'}\n📝 Notes: ${lead.notes || 'N/A'}\n\nLog in to your dashboard to take action.`
+    });
+
+    // 3. Push Notification (Supabase)
+    try {
+      await pushNotification(agentEmail, 'new_lead', `New lead: ${lead.name}`);
+    } catch (e) {
+      console.warn('Push Notify Failed:', e.message);
+    }
+
+    res.json({ success: true, emailSent: emailResult.success });
+  } catch (error) {
+    console.error('Lead Submission Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Dedicated Lead Notification Endpoint (Legacy)
 app.post('/api/notify-lead', async (req, res) => {
   try {
     const { agentEmail, lead } = req.body;

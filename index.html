@@ -534,21 +534,34 @@ function submitLead(){
   var name=document.getElementById('cf-n').value.trim();
   if(!name){st('Please enter your name.',true);return;}
   var lead={name:name,phone:document.getElementById('cf-p').value,email:document.getElementById('cf-e').value,property_interest:document.getElementById('cf-i').value+' Budget: '+document.getElementById('cf-b').value,notes:document.getElementById('cf-nt').value,status:'New',source:'Website',pipeline_stage:'New',score:60};
-  di(DB.LEADS,lead);
-  di(DB.NOTIFICATIONS,{title:'🚀 New Web Lead: '+name,description:'Interest: '+lead.property_interest,type:'lead',icon:'👤',is_read:false,source:'Website'});
-  document.getElementById('c-form').style.display='none';
-  document.getElementById('c-ok').style.display='block';
-  st('Lead submitted successfully! Syncing with agent...');
   
-  // Direct Notification Call
+  // Direct Unified Lead Submission
   const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
   const agentEmail = creds ? creds.username : 'sarah@propedge.ae';
-  fetch('/api/notify-lead', {
+  
+  fetch('/api/leads', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ agentEmail, lead })
-  }).catch(e => console.error('Notification Error:', e));
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('c-form').style.display='none';
+      document.getElementById('c-ok').style.display='block';
+      st('Inquiry sent! Agent notified via Resend.');
+    } else {
+      st('Error sending inquiry: ' + (data.error || 'Unknown error'), true);
+    }
+  })
+  .catch(e => {
+    console.error('Submission Error:', e);
+    st('Network error. Lead saved locally.', true);
+  });
 
+  // Fallback: save locally and sync
+  di(DB.LEADS,lead);
+  di(DB.NOTIFICATIONS,{title:'🚀 New Web Lead: '+name,description:'Interest: '+lead.property_interest,type:'lead',icon:'👤',is_read:false,source:'Website'});
   syncToDB();
 }
 function submitBooking(property_name){
@@ -678,23 +691,30 @@ function submitLeadPopup(){
   var name=document.getElementById('lp-name').value.trim();
   if(!name){st('Please enter your name.',true);return;}
   var lead={name:name,phone:document.getElementById('lp-phone').value,email:document.getElementById('lp-email').value,property_interest:document.getElementById('lp-interest').value||'Not specified',status:'New',source:'Website',pipeline_stage:'New',score:65};
-  di(DB.LEADS,lead);
-  di(DB.NOTIFICATIONS,{title:'🔥 Website Lead: '+name,description:'Via capture popup',type:'lead',icon:'👤',is_read:false,source:'Website'});
-  document.getElementById('lpop-form').style.display='none';
-  document.getElementById('lpop-ok').style.display='block';
-  st('Lead submitted successfully!');
 
-  // Direct Notification Call
+  // Direct Unified Lead Submission
   const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
   const agentEmail = creds ? creds.username : 'sarah@propedge.ae';
-  fetch('/api/notify-lead', {
+  
+  fetch('/api/leads', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ agentEmail, lead })
-  }).catch(e => console.error('Notification Error:', e));
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('lpop-form').style.display='none';
+      document.getElementById('lpop-ok').style.display='block';
+      st('Details sent! Agent notified.');
+      setTimeout(closeLPop,3000);
+    }
+  })
+  .catch(e => console.error('Popup Lead Error:', e));
 
+  di(DB.LEADS,lead);
+  di(DB.NOTIFICATIONS,{title:'🔥 Website Lead: '+name,description:'Via capture popup',type:'lead',icon:'👤',is_read:false,source:'Website'});
   syncToDB();
-  setTimeout(closeLPop,3000);
 }
 var lpopShown=false;
 setTimeout(function(){
