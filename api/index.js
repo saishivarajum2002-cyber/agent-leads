@@ -155,6 +155,28 @@ app.post('/api/create-meeting', async (req, res) => {
   }
 });
 
+// Generic Email Endpoint (Fix for "/api/send-email" not found)
+app.get('/api/send-email', (req, res) => {
+  res.json({ message: "API working - Email service is ready" });
+});
+
+app.post('/api/send-email', async (req, res) => {
+  try {
+    const { to, subject, message } = req.body;
+    if (!to || !subject || !message) {
+      return res.status(400).json({ error: 'to, subject, and message are required' });
+    }
+    const result = await sendEmail({ to, subject, message });
+    if (result.success) {
+      res.json({ success: true, message: 'Email sent successfully', data: result.data });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // AI Tool: Generate Property Description
 app.post('/api/ai/description', async (req, res) => {
   try {
@@ -227,19 +249,6 @@ app.post('/api/sync', async (req, res) => {
     const oldLeads = getLeads(oldSnapshot ? oldSnapshot.data : null);
     const newLeads = getLeads(data);
     
-    if (newLeads.length > oldLeads.length) {
-      const lead = newLeads[0];
-      if (lead && lead.name) {
-        console.log(`📨 New lead detected for ${email}: ${lead.name}`);
-        const emailResult = await sendEmail({
-          to: email,
-          subject: `🔔 New Lead: ${lead.name}`,
-          message: `Hi,\n\nYou have a new lead!\n\nName: ${lead.name}\nPhone: ${lead.phone || 'N/A'}\nProperty: ${lead.property_interest || 'N/A'}\n\nCheck your dashboard for more details.`
-        });
-        await pushNotification(email, 'new_lead', `New lead: ${lead.name}`);
-      }
-    }
-
     await DataSnapshot.findOneAndUpdate({ email }, { email, data }, { upsert: true });
     res.json({ success: true });
   } catch (error) {

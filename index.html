@@ -539,6 +539,16 @@ function submitLead(){
   document.getElementById('c-form').style.display='none';
   document.getElementById('c-ok').style.display='block';
   st('Lead submitted successfully! Syncing with agent...');
+  
+  // Direct Notification Call
+  const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
+  const agentEmail = creds ? creds.username : 'sarah@propedge.ae';
+  fetch('/api/notify-lead', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ agentEmail, lead })
+  }).catch(e => console.error('Notification Error:', e));
+
   syncToDB();
 }
 function submitBooking(property_name){
@@ -673,6 +683,16 @@ function submitLeadPopup(){
   document.getElementById('lpop-form').style.display='none';
   document.getElementById('lpop-ok').style.display='block';
   st('Lead submitted successfully!');
+
+  // Direct Notification Call
+  const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
+  const agentEmail = creds ? creds.username : 'sarah@propedge.ae';
+  fetch('/api/notify-lead', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ agentEmail, lead })
+  }).catch(e => console.error('Notification Error:', e));
+
   syncToDB();
   setTimeout(closeLPop,3000);
 }
