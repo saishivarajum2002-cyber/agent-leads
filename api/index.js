@@ -10,7 +10,7 @@ app.use(express.static(path.join(__dirname, '..')));
 
 require('dotenv').config();
 const { sendEmail } = require('../services/email');
-const { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase } = require('../services/supabase');
+const { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase, getVisitFromSupabase } = require('../services/supabase');
 const { generateDescription } = require('../services/ai');
 
 // Constants
@@ -171,6 +171,30 @@ app.patch('/api/visits/:id', async (req, res) => {
         }
       }
     }
+
+    // 3. Send Notifications
+    try {
+      const visitRes = await getVisitFromSupabase(id);
+      if (visitRes.success) {
+        const v = visitRes.data;
+        const isConfirmed = updates.status === 'confirmed';
+        const isRescheduled = updates.visit_date || updates.visit_time;
+
+        if (isConfirmed || isRescheduled) {
+          const subject = isRescheduled ? `🔄 Visit Rescheduled: ${v.property_name}` : `✅ Visit Confirmed: ${v.property_name}`;
+          const msg = `Hi ${v.client_name},\n\nYour property visit for ${v.property_name} has been ${isRescheduled ? 'rescheduled' : 'confirmed'}.\n\n📅 Date: ${updates.visit_date || v.visit_date}\n🕒 Time: ${updates.visit_time || v.visit_time}\n\nWe look forward to seeing you!`;
+          
+          if (v.client_email) {
+            await sendEmail({ to: v.client_email, subject, message: msg });
+          }
+          await sendEmail({ 
+            to: agentEmail, 
+            subject: `Update: Visit with ${v.client_name}`, 
+            message: `The visit with ${v.client_name} for ${v.property_name} has been updated.\n\nStatus: ${updates.status || v.status}\nDate: ${updates.visit_date || v.visit_date}\nTime: ${updates.visit_time || v.visit_time}`
+          });
+        }
+      }
+    } catch (e) { console.error('Notification Error:', e.message); }
 
     res.json({ success: true, supabaseUpdated: supabaseResult.success });
   } catch (error) {
