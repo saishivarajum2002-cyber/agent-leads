@@ -41,10 +41,51 @@ const saveLeadToSupabase = async (lead) => {
   }
 };
 
+const saveVisitToSupabase = async (visit) => {
+  if (!supabase) return { success: false, error: 'Supabase not configured' };
+  try {
+    const visitRecord = {
+      property_name: visit.property_name,
+      client_name: visit.client_name,
+      client_email: visit.client_email,
+      client_phone: visit.client_phone,
+      visit_date: visit.visit_date,
+      visit_time: visit.visit_time,
+      status: visit.status || 'pending',
+      outcome: visit.outcome || null,
+      notes: visit.notes,
+      created_at: new Date().toISOString()
+    };
+    const { data, error } = await supabase
+      .from('visits')
+      .insert([visitRecord]);
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('❌ Supabase Visit Save Error:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+const updateVisitInSupabase = async (id, updates) => {
+  if (!supabase) return { success: false, error: 'Supabase not configured' };
+  try {
+    const { data, error } = await supabase
+      .from('visits')
+      .update(updates)
+      .eq('id', id);
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('❌ Supabase Visit Update Error:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 const pushNotification = async (agentEmail, type, message) => {
   // Existing mock/prepared logic for notifications
   console.log(`🔔 Notification for ${agentEmail}: [${type}] ${message}`);
   return { success: true };
 };
 
-module.exports = { pushNotification, saveLeadToSupabase };
+module.exports = { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase };

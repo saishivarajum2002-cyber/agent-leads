@@ -2196,7 +2196,7 @@
           class="nav-badge" id="badge-props">0</span></div>
       <div class="nav-item" onclick="showPanel('map',this)"><span class="icon"></span>Map View</div>
       <div class="nav-sec">Client Tools</div>
-      <div class="nav-item" onclick="showPanel('bookings',this)"><span class="icon"></span>Bookings<span
+      <div class="nav-item" onclick="showPanel('bookings',this)"><span class="icon"></span>Property Visits<span
           class="nav-badge green" id="badge-bookings">0</span></div>
       <div class="nav-item" onclick="showPanel('marketing',this)"><span class="icon"></span>Marketing</div>
       <div class="nav-item" onclick="showPanel('ai',this)"><span class="icon"></span>AI Tools</div>
@@ -2292,7 +2292,7 @@
             onclick="showPanel('bookings',document.querySelector('.nav-item:nth-child(7)'))">
             <div class="flow-step-icon">📅</div>
             <div class="flow-step-info">
-              <div class="flow-step-label">Visits Booked</div>
+              <div class="flow-step-label">Property Visits</div>
               <div class="flow-step-val" id="flow-book">0</div>
             </div>
           </div>
@@ -2877,25 +2877,19 @@
             <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Connect your favorite tools to automate
               lead follow-ups and meeting scheduling.</div>
             <div class="int-grid">
-              <div class="int-card" onclick="connectIntegration('google')">
-                <div class="int-icon" style="color:#EA4335">G</div>
+              <div class="int-card" onclick="toast('WhatsApp Integration Active')">
+                <div class="int-icon" style="color:#25D366">W</div>
                 <div class="int-info">
-                  <div class="int-nm">Google Calendar / Meet</div>
-                  <div class="int-st" id="int-google-st">Not Connected</div>
+                  <div class="int-nm">WhatsApp</div>
+                  <div class="int-st">Connected</div>
                 </div>
-                <button class="btn btn-ghost btn-sm" id="int-google-btn">Connect</button>
               </div>
             </div>
             <div
               style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:20px;flex-wrap:wrap">
-              <label class="check-wrap"><input type="checkbox" id="opt-email" checked onchange="saveOptions()"> 📧 Email
-                Alerts</label>
-              <label class="check-wrap"><input type="checkbox" id="opt-sms" checked onchange="saveOptions()"> 📱 SMS
-                Notifications</label>
-              <label class="check-wrap"><input type="checkbox" id="opt-whatsapp" checked onchange="saveOptions()"> 💬
-                WhatsApp Pre-fill</label>
-              <label class="check-wrap"><input type="checkbox" id="opt-auto" checked onchange="saveOptions()"> ⚡
-                Auto-generate Meeting Links</label>
+              <label class="check-wrap"><input type="checkbox" id="opt-email" checked onchange="saveOptions()"> 📧 Email Alerts</label>
+              <label class="check-wrap"><input type="checkbox" id="opt-sms" checked onchange="saveOptions()"> 📱 SMS Notifications</label>
+              <label class="check-wrap"><input type="checkbox" id="opt-whatsapp" checked onchange="saveOptions()"> 💬 WhatsApp Pre-fill</label>
             </div>
           </div>
         </div>
@@ -3017,7 +3011,7 @@
 
   <div class="modal-overlay" id="modal-addBooking">
     <div class="modal">
-      <div class="modal-title">Schedule Tour</div>
+      <div class="modal-title">Schedule Property Visit</div>
       <div class="modal-close" onclick="closeModal('addBooking')">✕</div>
       <div class="form-group"><label class="form-label">Client Name *</label><input class="form-input" id="nb-name"
           placeholder="Full name"></div>
@@ -3121,13 +3115,12 @@
         <h3 style="margin-bottom:12px">Step 3: Connect Account</h3>
         <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Connect your Google account to automate
           meetings.</p>
-        <div class="int-card" onclick="connectIntegration('google')" style="margin-bottom:16px">
-          <div class="int-icon" style="color:#EA4335">G</div>
+        <div class="int-card" style="margin-bottom:16px">
+          <div class="int-icon" style="color:#25D366">W</div>
           <div class="int-info">
-            <div class="int-nm">Google Calendar / Meet</div>
-            <div class="int-st" id="on-google-st">Not Connected</div>
+            <div class="int-nm">WhatsApp Communication</div>
+            <div class="int-st">Automatic Pre-fills Active</div>
           </div>
-          <button class="btn btn-primary btn-sm">Connect</button>
         </div>
         <button class="btn btn-ghost" style="width:100%" onclick="nextOnboard(4)">Skip for now</button>
       </div>
@@ -3506,7 +3499,8 @@
       const tvEl = document.getElementById('d-today-visits');
       if (tvEl) {
         tvEl.innerHTML = todayVisits.length ? todayVisits.map(b => {
-          const isZoom = (b.meeting_link || '').includes('zoom.us');
+          const waLink = `https://wa.me/${(b.client_phone || '').replace(/\D/g, '')}?text=${encodeURIComponent('Hi ' + b.client_name + ', I am looking forward to our property visit today for ' + b.property_name)}`;
+          const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.property_name + ' ' + (b.address || ''))}`;
           return `
       <div class="visit-item">
         <div class="visit-time-badge">${b.visit_time || '—'}</div>
@@ -3515,8 +3509,10 @@
           <div style="font-size:11px;color:var(--muted)">${b.property_name || '—'}</div>
         </div>
         <div class="visit-actions">
-          ${b.meeting_link ? `<a href="${b.meeting_link}" target="_blank" class="btn-join ${isZoom ? 'btn-zoom' : 'btn-meet'}">Join</a>` : ''}
-          ${b.status === 'Pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Confirmed')">✓ Accept</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','Rejected')">✗</button>` : ''}
+          <a href="${waLink}" target="_blank" class="btn btn-whatsapp btn-sm" title="WhatsApp Client">💬</a>
+          <a href="${mapLink}" target="_blank" class="btn btn-ghost btn-sm" title="Open in Maps">📍</a>
+          ${b.status === 'Pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Confirmed')">✓</button>` : ''}
+          ${b.status === 'Confirmed' ? `<button class="btn btn-primary btn-sm" onclick="markVisitOutcome('${b.id}')">Outcome</button>` : ''}
         </div>
       </div>`;
         }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:14px">No visits today</div>';
@@ -3622,6 +3618,7 @@
         const n = document.getElementById('nb-name'); if (n) n.value = l?.name || '';
         const e = document.getElementById('nb-email'); if (e) e.value = l?.email || '';
         const p = document.getElementById('nb-phone'); if (p) p.value = l?.phone || '';
+        const pr = document.getElementById('nb-prop'); if (pr && l?.property_interest) pr.value = l.property_interest;
       }, 100);
 
     }
@@ -3884,68 +3881,65 @@
     // ================================================================
     // BOOKINGS CRUD
     // ================================================================
-    function saveBooking() {
+    async function saveBooking() {
       const name = document.getElementById('nb-name').value.trim();
       const date = document.getElementById('nb-date').value;
       const time = document.getElementById('nb-time').value;
       if (!name || !date || !time) { toast('Name, date and time required.', true); return; }
       const propSel = document.getElementById('nb-prop');
-      const booking = { client_name: name, client_phone: document.getElementById('nb-phone').value, client_email: document.getElementById('nb-email').value, property_id: propSel.value || null, property_name: propSel.options[propSel.selectedIndex]?.text || '', visit_date: date, visit_time: time, notes: document.getElementById('nb-notes').value, status: 'Pending' };
+      const visit = { client_name: name, client_phone: document.getElementById('nb-phone').value, client_email: document.getElementById('nb-email').value, property_id: propSel.value || null, property_name: propSel.options[propSel.selectedIndex]?.text || '', visit_date: date, visit_time: time, notes: document.getElementById('nb-notes').value, status: 'pending' };
 
-      DB.insert(DB.BOOKINGS, booking);
-      DB.insert(DB.NOTIFICATIONS, { title: 'Tour Request: ' + name, description: `Visit on ${date} at ${time}`, type: 'booking', icon: '', is_read: false });
+      // 1. Local Save
+      const saved = DB.insert(DB.BOOKINGS, visit);
+      DB.insert(DB.NOTIFICATIONS, { title: 'New Property Visit: ' + name, description: `Visit on ${date} at ${time}`, type: 'booking', icon: '📅', is_read: false });
+      
+      // 2. API Save
+      try {
+        await fetch('/api/visits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentEmail: state.agent.email, visit: saved })
+        });
+      } catch (e) { console.warn('API Visit Sync Error:', e); }
+
       state.bookings = DB.getAll(DB.BOOKINGS);
       state.notifications = DB.getAll(DB.NOTIFICATIONS);
-      renderAll(); closeModal('addBooking'); toast('Tour scheduled!');
+      renderAll(); closeModal('addBooking'); toast('Property visit scheduled!');
     }
 
     async function updateBookingStatus(id, status) {
-      let updates = { status };
-      const b = state.bookings.find(x => x.id === id);
-      if (status === 'Confirmed') {
-        toast('Creating meeting...', false);
-        try {
-          const res = await fetch('/api/create-meeting', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: state.agent.email,
-              booking: { ...b, email: b.client_email }
-            })
-          });
-          const data = await res.json();
-
-          // Handle Google not connected
-          if (data.error === 'google_not_connected') {
-            toast('⚠️ Please connect your Google account in Settings first!', true);
-            // Switch to Settings tab
-            setTimeout(() => showSection('settings'), 1200);
-            return; // Don't save the booking as Confirmed yet
-          }
-
-          if (data.meeting_link) {
-            updates.meeting_link = data.meeting_link;
-            updates.meeting_id = data.meeting_id;
-            updates.meeting_type = data.type;
-            toast('✅ Meeting Created! Emails sent to client & agent.', false);
-          } else {
-            throw new Error(data.error || data.message || 'Server Error');
-          }
-        } catch (e) {
-          console.error(e);
-          if (e.message.includes('google_not_connected') || e.message.includes('connect your Google')) {
-            toast('⚠️ Connect your Google account in Settings first!', true);
-            setTimeout(() => showSection('settings'), 1200);
-            return;
-          }
-          toast('Error: ' + e.message, true);
-          return;
-        }
-      }
-
-      DB.update(DB.BOOKINGS, id, updates);
+      DB.update(DB.BOOKINGS, id, { status });
       state.bookings = DB.getAll(DB.BOOKINGS);
       renderAll();
+      
+      // Sync to API
+      try {
+        await fetch('/api/visits/' + id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentEmail: state.agent.email, updates: { status } })
+        });
+      } catch (e) { }
+      
+      toast(`Visit status: ${status}`);
+    }
+
+    function markVisitOutcome(id) {
+      const outcome = prompt("Enter visit outcome (Interested, Not Interested, Negotiation):", "Interested");
+      if (!outcome) return;
+      
+      DB.update(DB.BOOKINGS, id, { outcome, status: 'completed' });
+      state.bookings = DB.getAll(DB.BOOKINGS);
+      renderAll();
+      
+      // Sync to API
+      fetch('/api/visits/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentEmail: state.agent.email, updates: { outcome, status: 'completed' } })
+      }).catch(e => { });
+      
+      toast(`Outcome saved: ${outcome}`);
     }
 
 

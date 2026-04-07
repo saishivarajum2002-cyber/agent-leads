@@ -10,8 +10,7 @@ app.use(express.static(path.join(__dirname, '..')));
 
 require('dotenv').config();
 const { sendEmail } = require('../services/email');
-const { createGoogleMeeting, getGoogleAuthUrl, getGoogleTokens } = require('../services/google');
-const { pushNotification, saveLeadToSupabase } = require('../services/supabase');
+const { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase } = require('../services/supabase');
 const { generateDescription } = require('../services/ai');
 
 // Constants
@@ -90,31 +89,9 @@ const DataSnapshot = mongoose.models.DataSnapshot || mongoose.model('DataSnapsho
 // OAUTH & INTEGRATIONS
 // ==========================================
 
-// 1. Google OAuth
-app.get('/auth/google', (req, res) => {
-  const { email } = req.query;
-  const url = getGoogleAuthUrl(email);
-  res.redirect(url);
-});
-
-app.get('/auth/google/callback', async (req, res) => {
-  const { code, state: email } = req.query;
-  try {
-    const tokens = await getGoogleTokens(code);
-    await PeToken.findOneAndUpdate(
-      { email, platform: 'google' },
-      { 
-        access_token: tokens.access_token, 
-        refresh_token: tokens.refresh_token, 
-        expiry: tokens.expiry_date ? new Date(tokens.expiry_date) : null 
-      },
-      { upsert: true }
-    );
-    res.send('<script>window.opener.postMessage("google_connected", "*"); window.close();</script>');
-  } catch (error) {
-    res.status(500).send('Google Auth Error: ' + error.message);
-  }
-});
+// 1. WhatsApp Templates & Visit Status Status
+const VISIT_STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'];
+const VISIT_OUTCOMES = ['interested', 'not interested', 'negotiation'];
 
 // 2. Status Check
 app.get('/api/integration-status', async (req, res) => {
@@ -124,34 +101,80 @@ app.get('/api/integration-status', async (req, res) => {
   res.json(status);
 });
 
-// 3. Create Meeting
-app.post('/api/create-meeting', async (req, res) => {
-  const { email, booking } = req.body;
+// 3. Property Visits
+app.post('/api/visits', async (req, res) => {
+  const { agentEmail, visit } = req.body;
   try {
-    const tokenRecord = await PeToken.findOne({ email, platform: 'google' });
-    if (!tokenRecord || !tokenRecord.access_token || tokenRecord.access_token.startsWith('MOCK_')) {
-      return res.status(400).json({ 
-        error: 'google_not_connected',
-        message: 'Please connect your Google account in Settings to create a real meeting link.'
-      });
-    }
-    const meetingData = await createGoogleMeeting(booking, tokenRecord);
-    if (booking.email) {
-      await sendEmail({
-        to: booking.email,
-        subject: `Meeting Confirmed: Tour of ${booking.property_name}`,
-        message: `Hi ${booking.client_name},\n\nYour property tour has been confirmed!\n\nDate: ${booking.visit_date}\nTime: ${booking.visit_time}\n\n📹 Join Meeting: ${meetingData.meeting_link}`
-      });
-    }
-    await sendEmail({
-      to: email,
-      subject: `Meeting Created: Tour with ${booking.client_name}`,
-      message: `Meeting for ${booking.client_name} confirmed at ${meetingData.meeting_link}`
+    if (!agentEmail || !visit) return res.status(400).json({ error: 'agentEmail and visit required' });
+
+    // 1. Save to Supabase
+    const supabaseResult = await saveVisitToSupabase({
+      ...visit,
+      status: visit.status || 'pending',
+      created_at: new Date().toISOString()
     });
-    await pushNotification(email, 'meeting_created', `Meeting scheduled with ${booking.client_name}`);
-    return res.json({ meeting_link: meetingData.meeting_link, type: 'google' });
+
+    // 2. Save to MongoDB (Sync)
+    let mongodbSaved = false;
+    try {
+      let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+      if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: { pe_visits: [] } });
+      if (!snapshot.data.pe_visits) snapshot.data.pe_visits = [];
+      
+      const newVisit = { ...visit, id: visit.id || Date.now().toString(36), created_at: new Date().toISOString() };
+      snapshot.data.pe_visits.unshift(newVisit);
+      snapshot.markModified('data');
+      await snapshot.save();
+      mongodbSaved = true;
+    } catch (e) { console.error('MongoDB Visit Error:', e.message); }
+
+    // 3. Send Notification Email to Agent
+    await sendEmail({
+      to: agentEmail,
+      subject: `📅 New Visit Booked: ${visit.client_name}`,
+      message: `Hi,\n\nA new property visit has been scheduled!\n\n🏠 Property: ${visit.property_name}\n👤 Client: ${visit.client_name}\n📅 Date: ${visit.visit_date}\n🕒 Time: ${visit.visit_time}\n📞 Phone: ${visit.client_phone || 'N/A'}\n\nCheck your dashboard for details.`
+    });
+
+    // 4. Send Confirmation Email to Client (if provided)
+    if (visit.client_email) {
+      await sendEmail({
+        to: visit.client_email,
+        subject: `Property Visit Confirmed: ${visit.property_name}`,
+        message: `Hi ${visit.client_name},\n\nYour visit to ${visit.property_name} has been scheduled.\n\nDate: ${visit.visit_date}\nTime: ${visit.visit_time}\n\nWe look forward to seeing you!`
+      });
+    }
+
+    await pushNotification(agentEmail, 'new_visit', `Visit scheduled with ${visit.client_name}`);
+
+    return res.json({ success: true, supabaseSaved: supabaseResult.success, mongodbSaved });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create meeting: ' + error.message });
+    res.status(500).json({ error: 'Failed to create visit: ' + error.message });
+  }
+});
+
+app.patch('/api/visits/:id', async (req, res) => {
+  const { id } = req.params;
+  const { agentEmail, updates } = req.body;
+  try {
+    // 1. Update Supabase
+    const supabaseResult = await updateVisitInSupabase(id, updates);
+
+    // 2. Update MongoDB
+    if (agentEmail) {
+      const snapshot = await DataSnapshot.findOne({ email: agentEmail });
+      if (snapshot && snapshot.data.pe_visits) {
+        const idx = snapshot.data.pe_visits.findIndex(v => v.id === id);
+        if (idx !== -1) {
+          snapshot.data.pe_visits[idx] = { ...snapshot.data.pe_visits[idx], ...updates };
+          snapshot.markModified('data');
+          await snapshot.save();
+        }
+      }
+    }
+
+    res.json({ success: true, supabaseUpdated: supabaseResult.success });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update visit: ' + error.message });
   }
 });
 
