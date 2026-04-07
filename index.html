@@ -355,7 +355,7 @@ function scheduleTourFromModal(){
   // Override the popup button to call submitBooking instead of submitLeadPopup
   var btn = document.querySelector('.lpop-sub-btn');
   btn.onclick = function(){ submitBooking(pName); closeLPop(); };
-  btn.textContent = "Schedule Tour Now →";
+  btn.textContent = "Schedule Visit Now →";
 }
 </script>
 <div class="tw" id="tw"></div>
@@ -573,10 +573,39 @@ function submitBooking(property_name){
   var phone=document.getElementById('lp-phone').value;
   var email=document.getElementById('lp-email').value;
   if(!email){st('Email required for booking confirmation.',true);return;}
-  var booking={client_name:name,client_phone:phone,client_email:email,property_name:property_name || 'Selected Property',date:new Date(Date.now() + 86400000).toISOString().split('T')[0],time:'14:00',status:'Pending',source:'Website'};
+  
+  var booking={
+    client_name:name,
+    client_phone:phone,
+    client_email:email,
+    property_name:property_name || 'Selected Property',
+    visit_date:new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    visit_time:'14:00',
+    status:'pending',
+    source:'Website'
+  };
+
+  const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
+  const agentEmail = creds ? creds.username : 'sarah@propedge.ae';
+
+  fetch('/api/visits', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ agentEmail, visit: booking })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      st('Visit requested! Agent will confirm soon.');
+    }
+  })
+  .catch(e => {
+    console.warn('Direct Visit Sync Error:', e);
+    st('Booking saved. Agent will be notified.');
+  });
+
   di(DB.BOOKINGS,booking);
-  di(DB.NOTIFICATIONS,{title:'📅 New Tour Request: '+name,description:'For: '+(property_name||'Property'),type:'booking',icon:'📅',is_read:false,source:'Website'});
-  st('Booking requested! Agent will confirm soon.');
+  di(DB.NOTIFICATIONS,{title:'📅 New Visit Request: '+name,description:'For: '+(property_name||'Property'),type:'booking',icon:'📅',is_read:false,source:'Website'});
   syncToDB();
 }
 function initMap(){
