@@ -229,6 +229,13 @@ footer{background:#0e0e0c;padding:60px 60px 32px}
 @media(max-width:860px){.nav,.nav.s{padding:18px 24px}.nav-links{display:none}.hero-content{padding:0 24px 60px}.h-stats{display:none}.sec{padding:70px 24px}.about-grid,.test-grid,.ft{grid-template-columns:1fr}.about-acc{display:none}.prop-cards{grid-template-columns:1fr}.prop-card:first-child{grid-column:span 1}.proc-grid{grid-template-columns:1fr 1fr}.c-row{grid-template-columns:1fr}}
 footer{padding-bottom:70px}
 .m-foot{flex-wrap:wrap;gap:8px}
+/* BOOKING SPECIFIC */
+.b-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.b-slot{padding:8px;border:1px solid var(--border);text-align:center;font-size:11px;cursor:pointer;transition:all .2s}
+.b-slot:hover{border-color:var(--gold);color:var(--gold)}
+.b-slot.active{background:var(--gold);color:var(--dark);border-color:var(--gold)}
+.b-slot.busy{opacity:.3;pointer-events:none;background:rgba(255,255,255,.05)}
+.b-date-sel{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:11px 14px;color:#faf8f4;font-size:13px;font-family:'Jost',sans-serif;outline:none;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -349,13 +356,51 @@ footer{padding-bottom:70px}
   <div class="m-body"><div class="m-top"><div><div class="m-title" id="mt"></div><div class="m-addr" id="ma"></div></div><div class="m-price" id="mp"></div></div><div class="m-tags" id="mtg"></div><div class="m-desc" id="md"></div><div class="m-foot"><button class="btn-g" onclick="cm();scheduleTourFromModal()">📅 Schedule Visit</button><button class="btn-g" style="background:rgba(184,150,90,.12);color:var(--goldl);border:1px solid rgba(184,150,90,.3)" onclick="cm();goto('contact')">Get Details</button><button class="btn-od" onclick="cm();goto('contact')">Contact Agent</button></div></div></div>
 </div>
 <script>
+var selectedSlot = null;
 function scheduleTourFromModal(){
   var pName = document.getElementById('mt').textContent;
   openLeadPopup();
-  // Override the popup button to call submitBooking instead of submitLeadPopup
-  var btn = document.querySelector('.lpop-sub-btn');
-  btn.onclick = function(){ submitBooking(pName); closeLPop(); };
-  btn.textContent = "Schedule Visit Now →";
+  document.getElementById('booking-fields').style.display = 'block';
+  document.getElementById('lp-interest').style.display = 'none';
+  var btn = document.getElementById('lpop-btn');
+  btn.onclick = function(){ submitBooking(pName); };
+  btn.textContent = "Request Visit →";
+  
+  // Set default date to tomorrow
+  var tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  var ds = tomorrow.toISOString().split('T')[0];
+  document.getElementById('bk-date').value = ds;
+  document.getElementById('bk-date').min = ds;
+  fetchSlots();
+}
+
+async function fetchSlots(){
+  const date = document.getElementById('bk-date').value;
+  if(!date) return;
+  const grid = document.getElementById('slots-grid');
+  grid.innerHTML = '<div style="grid-column:span 4;font-size:11px;opacity:.5">Loading availability...</div>';
+  
+  try {
+    const res = await fetch('/api/availability?date=' + date);
+    const data = await res.json();
+    const busy = data.busyTimes || [];
+    const slots = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'];
+    
+    grid.innerHTML = slots.map(s => {
+      const isBusy = busy.includes(s);
+      return `<div class="b-slot ${isBusy?'busy':''}" onclick="selSlot(this,'${s}')">${s}</div>`;
+    }).join('');
+    selectedSlot = null;
+  } catch(e) {
+    grid.innerHTML = '<div style="grid-column:span 4;color:#e05060;font-size:11px">Error loading slots</div>';
+  }
+}
+
+function selSlot(el, time){
+  document.querySelectorAll('.b-slot').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  selectedSlot = time;
 }
 </script>
 <div class="tw" id="tw"></div>
@@ -389,7 +434,12 @@ function scheduleTourFromModal(){
           <option value="" disabled selected>Property Interest</option>
           <option>Luxury Villa</option><option>Penthouse</option><option>Waterfront</option><option>Off-Plan</option><option>Investment</option>
         </select>
-        <button class="lpop-sub-btn" onclick="submitLeadPopup()">Get Exclusive Access →</button>
+        <div id="booking-fields" style="display:none">
+          <div class="lpop-tag" style="margin-top:15px">Select Date & Time</div>
+          <input type="date" class="b-date-sel" id="bk-date" onchange="fetchSlots()">
+          <div class="b-grid" id="slots-grid"></div>
+        </div>
+        <button class="lpop-sub-btn" id="lpop-btn" onclick="submitLeadPopup()">Get Exclusive Access →</button>
       </div>
       <div id="lpop-ok" style="display:none;text-align:center;padding:16px 0">
         <div style="font-size:26px;margin-bottom:8px">✨</div>
@@ -569,18 +619,23 @@ function submitLead(){
   syncToDB();
 }
 function submitBooking(property_name){
-  var name=document.getElementById('lp-name').value.trim() || 'Website Visitor';
-  var phone=document.getElementById('lp-phone').value;
-  var email=document.getElementById('lp-email').value;
-  if(!email){st('Email required for booking confirmation.',true);return;}
+  var name=document.getElementById('lp-name').value.trim();
+  var phone=document.getElementById('lp-phone').value.trim();
+  var email=document.getElementById('lp-email').value.trim();
+  var date=document.getElementById('bk-date').value;
+  
+  if(!name || !email || !selectedSlot){
+    st('Name, Email and Time Slot are required.',true);
+    return;
+  }
   
   var booking={
     client_name:name,
     client_phone:phone,
     client_email:email,
     property_name:property_name || 'Selected Property',
-    visit_date:new Date(Date.now() + 86400000).toISOString().split('T')[0],
-    visit_time:'14:00',
+    visit_date:date,
+    visit_time:selectedSlot,
     status:'pending',
     source:'Website'
   };
@@ -593,19 +648,25 @@ function submitBooking(property_name){
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ agentEmail, visit: booking })
   })
-  .then(res => res.json())
+  .then(res => {
+    if(res.status === 409) throw new Error('Slot already booked!');
+    return res.json();
+  })
   .then(data => {
     if (data.success) {
+      document.getElementById('lpop-form').style.display='none';
+      document.getElementById('lpop-ok').style.display='block';
       st('Visit requested! Agent will confirm soon.');
+      setTimeout(closeLPop, 3000);
     }
   })
   .catch(e => {
-    console.warn('Direct Visit Sync Error:', e);
-    st('Booking saved. Agent will be notified.');
+    console.warn('Booking Error:', e);
+    st(e.message || 'Booking failed. Try another slot.', true);
   });
 
   di(DB.BOOKINGS,booking);
-  di(DB.NOTIFICATIONS,{title:'📅 New Visit Request: '+name,description:'For: '+(property_name||'Property'),type:'booking',icon:'📅',is_read:false,source:'Website'});
+  di(DB.NOTIFICATIONS,{title:'📅 New Visit Request: '+name,description:'For: '+(property_name||'Property')+' at '+selectedSlot,type:'booking',icon:'📅',is_read:false,source:'Website'});
   syncToDB();
 }
 function initMap(){

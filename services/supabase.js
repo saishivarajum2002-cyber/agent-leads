@@ -97,10 +97,25 @@ const getVisitFromSupabase = async (id) => {
   }
 };
 
+const getVisitsByDate = async (date) => {
+  if (!supabase) return { success: false, error: 'Supabase not configured' };
+  try {
+    const { data, error } = await supabase
+      .from('visits')
+      .select('*')
+      .eq('visit_date', date)
+      .neq('status', 'rejected');
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
 const pushNotification = async (agentEmail, type, message) => {
   // Existing mock/prepared logic for notifications
   console.log(`🔔 Notification for ${agentEmail}: [${type}] ${message}`);
   return { success: true };
 };
 
-module.exports = { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase, getVisitFromSupabase };
+module.exports = { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase, getVisitFromSupabase, getVisitsByDate };

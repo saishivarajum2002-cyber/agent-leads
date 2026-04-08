@@ -10,7 +10,7 @@ app.use(express.static(path.join(__dirname, '..')));
 
 require('dotenv').config();
 const { sendEmail } = require('../services/email');
-const { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase, getVisitFromSupabase } = require('../services/supabase');
+const { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase, getVisitFromSupabase, getVisitsByDate } = require('../services/supabase');
 const { generateDescription } = require('../services/ai');
 
 // Constants
@@ -101,11 +101,36 @@ app.get('/api/integration-status', async (req, res) => {
   res.json(status);
 });
 
+// 2.5 Availability Check
+app.get('/api/availability', async (req, res) => {
+  const { date } = req.query;
+  if (!date) return res.status(400).json({ error: 'Date is required' });
+  
+  try {
+    const visits = await getVisitsByDate(date);
+    if (visits.success) {
+      // Return list of busy times
+      const busyTimes = visits.data.map(v => v.visit_time.substring(0, 5)); // HH:mm
+      return res.json({ success: true, busyTimes });
+    }
+    throw new Error(visits.error);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch availability: ' + error.message });
+  }
+});
+
 // 3. Property Visits
 app.post('/api/visits', async (req, res) => {
   const { agentEmail, visit } = req.body;
   try {
     if (!agentEmail || !visit) return res.status(400).json({ error: 'agentEmail and visit required' });
+
+    // 0. Double Booking Check
+    const availability = await getVisitsByDate(visit.visit_date);
+    if (availability.success) {
+      const isBooked = availability.data.some(v => v.visit_time.substring(0, 5) === visit.visit_time.substring(0, 5));
+      if (isBooked) return res.status(409).json({ error: 'This time slot is already booked.' });
+    }
 
     // 1. Save to Supabase
     const supabaseResult = await saveVisitToSupabase({

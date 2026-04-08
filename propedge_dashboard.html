@@ -3511,8 +3511,8 @@
         <div class="visit-actions">
           <a href="${waLink}" target="_blank" class="btn btn-whatsapp btn-sm" title="WhatsApp Client">💬</a>
           <a href="${mapLink}" target="_blank" class="btn btn-ghost btn-sm" title="Open in Maps">📍</a>
-          ${b.status === 'Pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Confirmed')">✓</button>` : ''}
-          ${b.status === 'Confirmed' ? `<button class="btn btn-primary btn-sm" onclick="markVisitOutcome('${b.id}')">Outcome</button>` : ''}
+          ${b.status === 'pending' || b.status === 'Pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Confirmed')">✓</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','Rejected')">✗</button>` : ''}
+          ${b.status === 'Confirmed' || b.status === 'confirmed' ? `<button class="btn btn-primary btn-sm" onclick="markVisitOutcome('${b.id}')">Outcome</button>` : ''}
         </div>
       </div>`;
         }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:14px">No visits today</div>';
@@ -3970,7 +3970,7 @@
       </div>
       <div style="display:flex;gap:5px;align-items:center">
         ${b.meeting_link ? `<a href="${b.meeting_link}" target="_blank" class="btn-join btn-meet" title="Join Google Meet">Join Meet</a>` : ''}
-        ${b.status === 'Pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Confirmed')">✓</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','Rejected')">✗</button>` : ''}
+        ${b.status === 'pending' || b.status === 'Pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Confirmed')">✓</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','Rejected')">✗</button>` : ''}
       </div>
     </div>`;
       }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No bookings yet</div>';
