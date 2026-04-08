@@ -153,23 +153,23 @@ app.post('/api/visits', async (req, res) => {
       mongodbSaved = true;
     } catch (e) { console.error('MongoDB Visit Error:', e.message); }
 
-    // 3. Send Notification Email to Agent
+    // 3. Send Notification Email to Agent (New Booking Alert)
     await sendEmail({
       to: agentEmail,
-      subject: `📅 New Visit Booked: ${visit.client_name}`,
-      message: `Hi,\n\nA new property visit has been scheduled!\n\n🏠 Property: ${visit.property_name}\n👤 Client: ${visit.client_name}\n📅 Date: ${visit.visit_date}\n🕒 Time: ${visit.visit_time}\n📞 Phone: ${visit.client_phone || 'N/A'}\n\nCheck your dashboard for details.`
+      subject: `🔔 NEW BOOKING ALERT: ${visit.client_name}`,
+      message: `Hi Sarah,\n\nYou have a new property visit request!\n\n🏠 Property: ${visit.property_name}\n👤 Client: ${visit.client_name}\n📅 Date: ${visit.visit_date}\n🕒 Time: ${visit.visit_time}\n📞 Phone: ${visit.client_phone || 'N/A'}\n\nPlease log in to your dashboard to confirm or reject this booking.`
     });
 
-    // 4. Send Confirmation Email to Client (if provided)
+    // 4. Send Initial Email to User (Visit Booked Successfully)
     if (visit.client_email) {
       await sendEmail({
         to: visit.client_email,
-        subject: `Property Visit Confirmed: ${visit.property_name}`,
-        message: `Hi ${visit.client_name},\n\nYour visit to ${visit.property_name} has been scheduled.\n\nDate: ${visit.visit_date}\nTime: ${visit.visit_time}\n\nWe look forward to seeing you!`
+        subject: `Your visit is booked successfully: ${visit.property_name}`,
+        message: `Hi ${visit.client_name},\n\nYour visit request for ${visit.property_name} has been received and is currently Pending agent approval.\n\nBooking Details:\n📅 Date: ${visit.visit_date}\n🕒 Time: ${visit.visit_time}\n\nAgent Contact:\n📧 Email: ${agentEmail}\n📞 Phone: +971 50 123 4567\n\nWe will notify you once your visit is confirmed.`
       });
     }
 
-    await pushNotification(agentEmail, 'new_visit', `Visit scheduled with ${visit.client_name}`);
+    await pushNotification(agentEmail, 'new_visit', `New booking alert: ${visit.client_name} requested a visit.`);
 
     return res.json({ success: true, supabaseSaved: supabaseResult.success, mongodbSaved });
   } catch (error) {
@@ -206,8 +206,10 @@ app.patch('/api/visits/:id', async (req, res) => {
         const isRescheduled = updates.visit_date || updates.visit_time;
 
         if (isConfirmed || isRescheduled) {
-          const subject = isRescheduled ? `🔄 Visit Rescheduled: ${v.property_name}` : `✅ Visit Confirmed: ${v.property_name}`;
-          const msg = `Hi ${v.client_name},\n\nYour property visit for ${v.property_name} has been ${isRescheduled ? 'rescheduled' : 'confirmed'}.\n\n📅 Date: ${updates.visit_date || v.visit_date}\n🕒 Time: ${updates.visit_time || v.visit_time}\n\nWe look forward to seeing you!`;
+          const subject = isRescheduled ? `🔄 Visit Rescheduled: ${v.property_name}` : `✅ Your visit is confirmed: ${v.property_name}`;
+          const msg = isRescheduled 
+            ? `Hi ${v.client_name},\n\nYour property visit for ${v.property_name} has been rescheduled.\n\n📅 New Date: ${updates.visit_date || v.visit_date}\n🕒 New Time: ${updates.visit_time || v.visit_time}\n\nWe look forward to seeing you!`
+            : `Hi ${v.client_name},\n\nYour visit is confirmed!\n\nWe look forward to showing you ${v.property_name}.\n\n📅 Date: ${v.visit_date}\n🕒 Time: ${v.visit_time}\n\nAgent: Sarah Al-Rashid\n📞 Phone: +971 50 123 4567`;
           
           if (v.client_email) {
             await sendEmail({ to: v.client_email, subject, message: msg });

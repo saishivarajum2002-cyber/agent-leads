@@ -655,8 +655,13 @@ function submitBooking(property_name){
   .then(data => {
     if (data.success) {
       document.getElementById('lpop-form').style.display='none';
+      document.getElementById('lpop-ok').innerHTML = `
+        <div style="font-size:26px;margin-bottom:8px">✨</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:#faf8f4;margin-bottom:4px">Your visit is booked successfully</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.4)">Check your email for booking details.</div>
+      `;
       document.getElementById('lpop-ok').style.display='block';
-      st('Visit requested! Agent will confirm soon.');
+      st('Your visit is booked successfully');
       setTimeout(closeLPop, 3000);
     }
   })
