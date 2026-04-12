@@ -158,7 +158,7 @@ app.post('/api/visits', async (req, res) => {
     await sendEmail({
       to: agentEmail,
       subject: `🔔 NEW BOOKING ALERT: ${visit.client_name}`,
-      message: `Hi Sarah,\n\nYou have a new property visit request!\n\n🏠 Property: ${visit.property_name}\n👤 Client: ${visit.client_name}\n📅 Date: ${visit.visit_date}\n🕒 Time: ${visit.visit_time}\n📞 Phone: ${visit.client_phone || 'N/A'}\n\nPlease log in to your dashboard to confirm or reject this booking.`
+      message: `Hi Sai Shiva,\n\nYou have a new property visit request!\n\n🏠 Property: ${visit.property_name}\n👤 Client: ${visit.client_name}\n📅 Date: ${visit.visit_date}\n🕒 Time: ${visit.visit_time}\n📞 Phone: ${visit.client_phone || 'N/A'}\n\nPlease log in to your dashboard to confirm or reject this booking.`
     });
 
     // 4. Send Initial Email to User (Visit Booked Successfully)
@@ -232,18 +232,20 @@ app.patch('/api/visits/:id', async (req, res) => {
       const visitRes = await getVisitFromSupabase(id);
       if (visitRes.success) {
         const v = visitRes.data;
-        const isConfirmed = String(updates.status).toLowerCase() === 'confirmed';
+        const targetAgentEmail = agentEmail || 'saishivaraju.m2002@gmail.com';
+        
+        const isConfirmed = String(updates.status).toLowerCase() === 'confirmed' || updates.status === 'confirmed';
         const isRescheduled = updates.visit_date || updates.visit_time;
 
         if (isConfirmed) {
-          console.log(`✅ Visit Approved! Preparing confirmation for [${v.client_name}]`);
+          console.log(`✅ Visit Approved! Preparing confirmation for [${v.client_name}] to [${v.client_email}]`);
         }
 
         if (isConfirmed || isRescheduled) {
           const subject = isRescheduled ? `🔄 Visit Rescheduled: ${v.property_name}` : `✅ Your visit is confirmed: ${v.property_name}`;
           const msg = isRescheduled 
             ? `Hi ${v.client_name},\n\nYour property visit for ${v.property_name} has been rescheduled.\n\n📅 New Date: ${updates.visit_date || v.visit_date}\n🕒 New Time: ${updates.visit_time || v.visit_time}\n\nWe look forward to seeing you!`
-            : `Hi ${v.client_name},\n\nYour visit is confirmed!\n\nWe look forward to showing you ${v.property_name}.\n\n📅 Date: ${v.visit_date}\n🕒 Time: ${v.visit_time}\n\nAgent: Sarah Al-Rashid\n📞 Phone: +971 50 123 4567`;
+            : `Hi ${v.client_name},\n\nYour visit is confirmed!\n\nWe look forward to showing you ${v.property_name}.\n\n📅 Date: ${v.visit_date}\n🕒 Time: ${v.visit_time}\n\nAgent: Sai Shiva\n📞 Phone: +971 50 123 4567`;
           
           if (v.client_email) {
             console.log(`📧 API: Sending Visit Confirmation TO CLIENT [${v.client_email}]`);
@@ -252,15 +254,17 @@ app.patch('/api/visits/:id', async (req, res) => {
             console.warn('⚠️ API: Client email missing in database for confirmation.');
           }
 
-          console.log(`📧 API: Sending Status Update TO AGENT [${agentEmail}]`);
+          console.log(`📧 API: Sending Status Update TO AGENT [${targetAgentEmail}]`);
           await sendEmail({ 
-            to: agentEmail, 
+            to: targetAgentEmail, 
             subject: `Update: Visit with ${v.client_name}`, 
             message: `The visit with ${v.client_name} for ${v.property_name} has been updated.\n\nStatus: ${updates.status || v.status}\nDate: ${updates.visit_date || v.visit_date}\nTime: ${updates.visit_time || v.visit_time}`
           });
         }
       }
-    } catch (e) { console.error('Notification Error:', e.message); }
+    } catch (e) {
+      console.error('Notification Error in PATCH:', e.message);
+    }
 
     res.json({ success: true, supabaseUpdated: supabaseResult.success });
   } catch (error) {
