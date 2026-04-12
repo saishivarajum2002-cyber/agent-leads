@@ -3511,8 +3511,8 @@
         <div class="visit-actions">
           <a href="${waLink}" target="_blank" class="btn btn-whatsapp btn-sm" title="WhatsApp Client">💬</a>
           <a href="${mapLink}" target="_blank" class="btn btn-ghost btn-sm" title="Open in Maps">📍</a>
-          ${b.status === 'pending' || b.status === 'Pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Confirmed')">✓</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','Rejected')">✗</button>` : ''}
-          ${b.status === 'Confirmed' || b.status === 'confirmed' ? `<button class="btn btn-primary btn-sm" onclick="markVisitOutcome('${b.id}')">Outcome</button>` : ''}
+          ${b.status.toLowerCase() === 'pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">✓</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','rejected')">✗</button>` : ''}
+          ${b.status.toLowerCase() === 'confirmed' ? `<button class="btn btn-primary btn-sm" onclick="markVisitOutcome('${b.id}')">Outcome</button>` : ''}
         </div>
       </div>`;
         }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:14px">No visits today</div>';
@@ -3523,8 +3523,8 @@
       document.getElementById('d-top-prop').innerHTML = topP ? `<div style="font-size:28px;margin-bottom:6px">🏆</div><div style="font-weight:600">${topP.name}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${topP.views} views · $${fmtNum(topP.price)}</div>` : '<div style="color:var(--muted);font-size:13px">No properties yet</div>';
 
       // Next booking
-      const nb = state.bookings.filter(b => b.visit_date >= today && b.status !== 'Rejected').sort((a, b) => a.visit_date.localeCompare(b.visit_date))[0];
-      document.getElementById('d-next-booking').innerHTML = nb ? `<div style="font-size:28px;margin-bottom:6px">📅</div><div style="font-weight:600">${nb.visit_date}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${nb.client_name} · ${nb.visit_time || ''}</div><div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="btn btn-primary btn-sm" onclick="updateBookingStatus('${nb.id}','Confirmed')">Confirm</button></div>` : '<div style="color:var(--muted);font-size:13px">No upcoming tours</div>';
+      const nb = state.bookings.filter(b => b.visit_date >= today && b.status.toLowerCase() !== 'rejected').sort((a, b) => a.visit_date.localeCompare(b.visit_date))[0];
+      document.getElementById('d-next-booking').innerHTML = nb ? `<div style="font-size:28px;margin-bottom:6px">📅</div><div style="font-weight:600">${nb.visit_date}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${nb.client_name} · ${nb.visit_time || ''}</div><div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="btn btn-primary btn-sm" onclick="updateBookingStatus('${nb.id}','confirmed')">Confirm</button></div>` : '<div style="color:var(--muted);font-size:13px">No upcoming tours</div>';
     }
 
     // ================================================================
@@ -3970,7 +3970,7 @@
       </div>
       <div style="display:flex;gap:5px;align-items:center">
         ${b.meeting_link ? `<a href="${b.meeting_link}" target="_blank" class="btn-join btn-meet" title="Join Google Meet">Join Meet</a>` : ''}
-        ${b.status === 'pending' || b.status === 'Pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','Confirmed')">✓</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','Rejected')">✗</button>` : ''}
+        ${b.status.toLowerCase() === 'pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">✓</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','rejected')">✗</button>` : ''}
       </div>
     </div>`;
       }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No bookings yet</div>';

@@ -180,6 +180,12 @@ app.post('/api/visits', async (req, res) => {
 app.patch('/api/visits/:id', async (req, res) => {
   const { id } = req.params;
   const { agentEmail, updates } = req.body;
+  
+  // Normalize status to lowercase if provided
+  if (updates && updates.status) {
+    updates.status = updates.status.toLowerCase();
+  }
+
   try {
     // 1. Update Supabase
     const supabaseResult = await updateVisitInSupabase(id, updates);
