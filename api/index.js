@@ -154,6 +154,7 @@ app.post('/api/visits', async (req, res) => {
     } catch (e) { console.error('MongoDB Visit Error:', e.message); }
 
     // 3. Send Notification Email to Agent (New Booking Alert)
+    console.log(`📧 API: Sending Agent Alert to [${agentEmail}]`);
     await sendEmail({
       to: agentEmail,
       subject: `🔔 NEW BOOKING ALERT: ${visit.client_name}`,
@@ -162,11 +163,14 @@ app.post('/api/visits', async (req, res) => {
 
     // 4. Send Initial Email to User (Visit Booked Successfully)
     if (visit.client_email) {
+      console.log(`📧 API: Sending Client Confirmation to [${visit.client_email}]`);
       await sendEmail({
         to: visit.client_email,
         subject: `Your visit is booked successfully: ${visit.property_name}`,
         message: `Hi ${visit.client_name},\n\nYour visit request for ${visit.property_name} has been received and is currently Pending agent approval.\n\nBooking Details:\n📅 Date: ${visit.visit_date}\n🕒 Time: ${visit.visit_time}\n\nAgent Contact:\n📧 Email: ${agentEmail}\n📞 Phone: +971 50 123 4567\n\nWe will notify you once your visit is confirmed.`
       });
+    } else {
+      console.warn('⚠️ API: No client email found for notification.');
     }
 
     // 5. Save Notification to MongoDB PeNotifications
@@ -238,8 +242,13 @@ app.patch('/api/visits/:id', async (req, res) => {
             : `Hi ${v.client_name},\n\nYour visit is confirmed!\n\nWe look forward to showing you ${v.property_name}.\n\n📅 Date: ${v.visit_date}\n🕒 Time: ${v.visit_time}\n\nAgent: Sarah Al-Rashid\n📞 Phone: +971 50 123 4567`;
           
           if (v.client_email) {
+            console.log(`📧 API: Sending Visit Confirmation TO CLIENT [${v.client_email}]`);
             await sendEmail({ to: v.client_email, subject, message: msg });
+          } else {
+            console.warn('⚠️ API: Client email missing in database for confirmation.');
           }
+
+          console.log(`📧 API: Sending Status Update TO AGENT [${agentEmail}]`);
           await sendEmail({ 
             to: agentEmail, 
             subject: `Update: Visit with ${v.client_name}`, 
