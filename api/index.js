@@ -232,8 +232,12 @@ app.patch('/api/visits/:id', async (req, res) => {
       const visitRes = await getVisitFromSupabase(id);
       if (visitRes.success) {
         const v = visitRes.data;
-        const isConfirmed = updates.status === 'confirmed';
+        const isConfirmed = String(updates.status).toLowerCase() === 'confirmed';
         const isRescheduled = updates.visit_date || updates.visit_time;
+
+        if (isConfirmed) {
+          console.log(`✅ Visit Approved! Preparing confirmation for [${v.client_name}]`);
+        }
 
         if (isConfirmed || isRescheduled) {
           const subject = isRescheduled ? `🔄 Visit Rescheduled: ${v.property_name}` : `✅ Your visit is confirmed: ${v.property_name}`;

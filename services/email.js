@@ -16,11 +16,11 @@ const sendEmail = async ({ to, subject, message }) => {
     return { success: false, error: 'Email service is missing: RESEND_API_KEY not configured' };
   }
   try {
-    // In sandbox mode, redirect all emails to the verified address
-    const recipient = SANDBOX_EMAIL || to;
-    if (SANDBOX_EMAIL && SANDBOX_EMAIL !== to) {
-      console.log(`📧 Sandbox mode: Redirecting email from [${to}] to [${recipient}]`);
-      subject = `[For: ${to}] ${subject}`;
+    const recipient = to;
+    
+    // Explicitly ignore sandbox override to ensure real delivery
+    if (process.env.RESEND_TO_OVERRIDE) {
+      console.log(`ℹ️ Ignoring environment override [${process.env.RESEND_TO_OVERRIDE}] for direct delivery to [${recipient}]`);
     }
 
     const { data, error } = await resend.emails.send({
