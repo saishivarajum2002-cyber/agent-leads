@@ -58,7 +58,9 @@ const saveVisitToSupabase = async (visit) => {
     };
     const { data, error } = await supabase
       .from('visits')
-      .insert([visitRecord]);
+      .insert([visitRecord])
+      .select()
+      .single();
     if (error) throw error;
     return { success: true, data };
   } catch (error) {

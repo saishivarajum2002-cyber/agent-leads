@@ -133,11 +133,20 @@ app.post('/api/visits', async (req, res) => {
     }
 
     // 1. Save to Supabase
-    const supabaseResult = await saveVisitToSupabase({
+    const { success: supabaseSaved, data: savedVisit, error: supabaseError } = await saveVisitToSupabase({
       ...visit,
       status: visit.status || 'pending',
       created_at: new Date().toISOString()
     });
+
+    if (!supabaseSaved) {
+      console.error('❌ Supabase Save Failure:', supabaseError);
+      return res.status(500).json({ error: 'Database Save Failed: ' + supabaseError });
+    }
+
+    // Capture the REAL ID from Supabase
+    const realId = savedVisit.id;
+    console.log(`📌 Generated Supabase ID: ${realId}`);
 
     // 2. Save to MongoDB (Sync)
     let mongodbSaved = false;
@@ -146,7 +155,7 @@ app.post('/api/visits', async (req, res) => {
       if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: { pe_visits: [] } });
       if (!snapshot.data.pe_visits) snapshot.data.pe_visits = [];
       
-      const newVisit = { ...visit, id: visit.id || Date.now().toString(36), created_at: new Date().toISOString() };
+      const newVisit = { ...visit, id: realId, created_at: new Date().toISOString() };
       snapshot.data.pe_visits.unshift(newVisit);
       snapshot.markModified('data');
       await snapshot.save();
@@ -183,7 +192,7 @@ app.post('/api/visits', async (req, res) => {
           title: 'Tour Request: ' + visit.client_name,
           description: `Wants to visit ${visit.property_name} · ${visit.visit_date} ${visit.visit_time}`,
           type: 'booking',
-          bookingId: visit.id,
+          bookingId: realId,
           icon: '📅',
           is_read: false,
           created_at: new Date().toISOString()
@@ -195,7 +204,7 @@ app.post('/api/visits', async (req, res) => {
 
     await pushNotification(agentEmail, 'new_visit', `New booking alert: ${visit.client_name} requested a visit.`);
 
-    return res.json({ success: true, supabaseSaved: supabaseResult.success, mongodbSaved });
+    return res.json({ success: true, supabaseSaved: true, mongodbSaved, id: realId });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create visit: ' + error.message });
   }
