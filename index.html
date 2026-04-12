@@ -663,6 +663,12 @@ function submitBooking(property_name){
       `;
       document.getElementById('lpop-ok').style.display='block';
       st('Your visit is booked successfully');
+      
+      // Also sync locally
+      di(DB.BOOKINGS,booking);
+      di(DB.NOTIFICATIONS,{title:'📅 New Visit Request: '+name,description:'For: '+(booking.property_name||'Property')+' at '+booking.visit_time,type:'booking',icon:'📅',is_read:false,source:'Website'});
+      syncToDB();
+
       setTimeout(closeLPop, 3000);
     }
   })
@@ -670,10 +676,6 @@ function submitBooking(property_name){
     console.warn('Booking Error:', e);
     st(e.message || 'Booking failed. Try another slot.', true);
   });
-
-  di(DB.BOOKINGS,booking);
-  di(DB.NOTIFICATIONS,{title:'📅 New Visit Request: '+name,description:'For: '+(property_name||'Property')+' at '+selectedSlot,type:'booking',icon:'📅',is_read:false,source:'Website'});
-  syncToDB();
 }
 function initMap(){
   if(mapInited)return;mapInited=true;
@@ -689,7 +691,6 @@ function initMap(){
 }
 function goto(id){var el=document.getElementById(id);if(el)el.scrollIntoView({behavior:'smooth'});}
 function fmt(n){if(!n)return'0';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(0)+'K';return n.toLocaleString();}
-function st(msg,error){var c=document.getElementById('tw');var t=document.createElement('div');t.className='tm'+(error?' err':'');t.textContent=msg;c.appendChild(t);setTimeout(function(){t.remove();},4000);}
 function initFade(){var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.08});document.querySelectorAll('.fade').forEach(function(el){obs.observe(el);});}
 
 // AUTH

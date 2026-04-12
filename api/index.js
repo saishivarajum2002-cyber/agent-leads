@@ -10,7 +10,7 @@ app.use(express.static(path.join(__dirname, '..')));
 
 require('dotenv').config();
 const { sendEmail } = require('../services/email');
-const { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase, getVisitFromSupabase, getVisitsByDate } = require('../services/supabase');
+const { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase, deleteVisitFromSupabase, getVisitFromSupabase, getVisitsByDate } = require('../services/supabase');
 const { generateDescription } = require('../services/ai');
 
 // Constants
@@ -282,6 +282,31 @@ app.patch('/api/visits/:id', async (req, res) => {
     res.json({ success: true, supabaseUpdated: supabaseResult.success });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update visit: ' + error.message });
+  }
+});
+
+app.delete('/api/visits/:id', async (req, res) => {
+  const { id } = req.params;
+  const { agentEmail } = req.query; // May be passed via query for MongoDB sync
+
+  try {
+    // 1. Delete from Supabase
+    const supabaseResult = await deleteVisitFromSupabase(id);
+
+    // 2. Delete from MongoDB
+    if (agentEmail) {
+      await connectDB();
+      const snapshot = await DataSnapshot.findOne({ email: agentEmail });
+      if (snapshot && snapshot.data.pe_visits) {
+        snapshot.data.pe_visits = snapshot.data.pe_visits.filter(v => v.id !== id);
+        snapshot.markModified('data');
+        await snapshot.save();
+      }
+    }
+
+    res.json({ success: true, supabaseDeleted: supabaseResult.success });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete visit: ' + error.message });
   }
 });
 

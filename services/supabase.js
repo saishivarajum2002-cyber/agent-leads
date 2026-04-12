@@ -84,6 +84,21 @@ const updateVisitInSupabase = async (id, updates) => {
   }
 };
 
+const deleteVisitFromSupabase = async (id) => {
+  if (!supabase) return { success: false, error: 'Supabase not configured' };
+  try {
+    const { data, error } = await supabase
+      .from('visits')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('❌ Supabase Visit Delete Error:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 const getVisitFromSupabase = async (id) => {
   if (!supabase) return { success: false, error: 'Supabase not configured' };
   try {
@@ -120,4 +135,4 @@ const pushNotification = async (agentEmail, type, message) => {
   return { success: true };
 };
 
-module.exports = { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase, getVisitFromSupabase, getVisitsByDate };
+module.exports = { pushNotification, saveLeadToSupabase, saveVisitToSupabase, updateVisitInSupabase, deleteVisitFromSupabase, getVisitFromSupabase, getVisitsByDate };

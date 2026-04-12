@@ -3552,6 +3552,7 @@
           <a href="${mapLink}" target="_blank" class="btn btn-ghost btn-sm" title="Open in Maps">📍</a>
           ${b.status.toLowerCase() === 'pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">✓</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','rejected')">✗</button>` : ''}
           ${b.status.toLowerCase() === 'confirmed' ? `<button class="btn btn-primary btn-sm" onclick="markVisitOutcome('${b.id}')">Outcome</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')" title="Delete Visit">🗑️</button>
         </div>
       </div>`;
         }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:14px">No visits today</div>';
@@ -3998,6 +3999,30 @@
       }
     }
 
+    async function deleteBooking(id) {
+      if (!confirm('Are you sure you want to permanently delete this visit record?')) return;
+      
+      // Local removal
+      DB.delete(DB.BOOKINGS, id);
+      state.bookings = DB.getAll(DB.BOOKINGS);
+      renderAll();
+      
+      // Sync to API
+      try {
+        const res = await fetch(`/api/visits/${id}?agentEmail=${encodeURIComponent(state.agent.email)}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast('Visit record deleted successfully.');
+          syncFromDB().then(() => renderAll());
+        }
+      } catch (e) {
+        console.warn('API Visit Delete Error:', e);
+        toast('Failed to sync deletion with server', true);
+      }
+    }
+
     function markVisitOutcome(id) {
       const outcome = prompt("Enter visit outcome (Interested, Not Interested, Negotiation):", "Interested");
       if (!outcome) return;
@@ -4045,6 +4070,7 @@
       <div style="display:flex;gap:5px;align-items:center">
         ${b.meeting_link ? `<a href="${b.meeting_link}" target="_blank" class="btn-join btn-meet" title="Join Google Meet">Join Meet</a>` : ''}
         ${b.status.toLowerCase() === 'pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">✓</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','rejected')">✗</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')" title="Delete Visit">🗑️</button>
       </div>
     </div>`;
       }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No bookings yet</div>';
@@ -4065,7 +4091,8 @@
                   <td style="font-size:12px">${b.visit_date} · ${b.visit_time}</td>
                   <td style="text-align:right">
                     <button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">Confirm</button>
-                    <button class="btn btn-danger btn-sm" style="margin-left:5px" onclick="updateBookingStatus('${b.id}','rejected')">Reject</button>
+                    <button class="btn btn-ghost btn-sm" style="margin-left:5px" onclick="updateBookingStatus('${b.id}','rejected')">Reject</button>
+                    <button class="btn btn-danger btn-sm" style="margin-left:5px" onclick="deleteBooking('${b.id}')">Delete</button>
                   </td>
                 </tr>
               `).join('')}
