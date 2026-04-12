@@ -10,25 +10,25 @@ const SANDBOX_EMAIL = process.env.RESEND_TO_OVERRIDE || null;
  * Email Service
  * Fully integrated with Resend API
  */
-const sendEmail = async ({ to, subject, message }) => {
+const sendEmail = async ({ to, subject, message, html }) => {
   if (!process.env.RESEND_API_KEY) {
     console.error('❌ RESEND_API_KEY is missing in environment variables!');
     return { success: false, error: 'Email service is missing: RESEND_API_KEY not configured' };
   }
   try {
     const recipient = to;
-    
-    // Explicitly ignore sandbox override to ensure real delivery
-    if (process.env.RESEND_TO_OVERRIDE) {
-      console.log(`ℹ️ Ignoring environment override [${process.env.RESEND_TO_OVERRIDE}] for direct delivery to [${recipient}]`);
-    }
 
-    const { data, error } = await resend.emails.send({
+    const payload = {
       from: 'PropEdge <notifications@saiwebservices.in>',
       to: [recipient],
       subject: subject,
       text: message,
-    });
+    };
+
+    // Include HTML if provided
+    if (html) payload.html = html;
+
+    const { data, error } = await resend.emails.send(payload);
 
     if (error) {
       console.error('📧 Resend Error:', JSON.stringify(error));
