@@ -24,7 +24,7 @@ const sendEmail = async ({ to, subject, message }) => {
     }
 
     const { data, error } = await resend.emails.send({
-      from: 'PropEdge <onboarding@resend.dev>',
+      from: 'PropEdge <notifications@saiwebservices.in>',
       to: [recipient],
       subject: subject,
       text: message,
