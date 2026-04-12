@@ -359,48 +359,59 @@ footer{padding-bottom:70px}
 var selectedSlot = null;
 function scheduleTourFromModal(){
   var pName = document.getElementById('mt').textContent;
-  openLeadPopup();
-  document.getElementById('booking-fields').style.display = 'block';
-  document.getElementById('lp-interest').style.display = 'none';
-  var btn = document.getElementById('lpop-btn');
-  btn.onclick = function(){ submitBooking(pName); };
-  btn.textContent = "Request Visit →";
-  
-  // Set default date to tomorrow
-  var tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  var ds = tomorrow.toISOString().split('T')[0];
-  document.getElementById('bk-date').value = ds;
-  document.getElementById('bk-date').min = ds;
-  fetchSlots();
+  cm(); // close property modal
+  // Use the new unified booking popup
+  if(typeof openVisitBooking === 'function'){
+    openVisitBooking(pName);
+  } else {
+    // fallback: open lead popup in booking mode
+    openLeadPopup();
+    document.getElementById('booking-fields').style.display = 'block';
+    var btn = document.getElementById('lpop-btn');
+    if(btn){ btn.textContent = 'REQUEST VISIT →'; btn.onclick = function(){ submitBookingLegacy(pName); }; }
+    var dateEl = document.getElementById('bk-date');
+    if(dateEl){ var t=new Date();t.setDate(t.getDate()+1);dateEl.value=t.toISOString().split('T')[0]; }
+    fetchSlotsStatic();
+  }
+}
+
+function fetchSlotsStatic(){
+  var slots=['9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM'];
+  var g=document.getElementById('slots-grid');
+  if(!g)return;
+  selectedSlot=null;
+  g.innerHTML=slots.map(function(s){
+    return '<div class="b-slot" onclick="selSlot(this,\''+s+'\')">'+s+'</div>';
+  }).join('');
 }
 
 async function fetchSlots(){
   const date = document.getElementById('bk-date').value;
-  if(!date) return;
+  if(!date){fetchSlotsStatic();return;}
   const grid = document.getElementById('slots-grid');
-  grid.innerHTML = '<div style="grid-column:span 4;font-size:11px;opacity:.5">Loading availability...</div>';
-  
+  const slots = ['9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM'];
   try {
     const res = await fetch('/api/availability?date=' + date);
+    if(!res.ok) throw new Error('unavailable');
     const data = await res.json();
     const busy = data.busyTimes || [];
-    const slots = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00'];
-    
     grid.innerHTML = slots.map(s => {
       const isBusy = busy.includes(s);
       return `<div class="b-slot ${isBusy?'busy':''}" onclick="selSlot(this,'${s}')">${s}</div>`;
     }).join('');
-    selectedSlot = null;
   } catch(e) {
-    grid.innerHTML = '<div style="grid-column:span 4;color:#e05060;font-size:11px">Error loading slots</div>';
+    // Fallback to static slots on any error
+    grid.innerHTML = slots.map(s => `<div class="b-slot" onclick="selSlot(this,'${s}')">${s}</div>`).join('');
   }
+  selectedSlot = null;
 }
 
 function selSlot(el, time){
   document.querySelectorAll('.b-slot').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
   selectedSlot = time;
+  // Also update the main script's selectedSlot if it exists
+  if(typeof window.selectedSlot !== 'undefined') window.selectedSlot = time;
 }
 </script>
 <div class="tw" id="tw"></div>
@@ -453,7 +464,51 @@ function selSlot(el, time){
 var DB={AGENT:'pe_agent',LEADS:'pe_leads',PROPERTIES:'pe_properties',NOTIFICATIONS:'pe_notifications',BOOKINGS:'pe_bookings'};
 function dg(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
 function da(k){return dg(k)||[];}
-function st(m,e){var c=document.getElementById('tw');if(!c)return;var d=document.createElement('div');d.className='tm'+(e?' err':'');d.textContent=m;c.appendChild(d);setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove();},500);},3000);}
+function st(m,e){var c=document.getElementById('tw');if(!c)return;var d=document.createElement('div');d.className='tm'+(e?' err':'');d.textContent=m;c.appendChild(d);setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove();},500);},3500);}
+
+var selectedSlot=null;
+var lpopMode='lead'; // 'lead' or 'booking'
+var lpopPropertyName='';
+
+function fetchSlots(){
+  var slots=['9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
+  var g=document.getElementById('slots-grid');
+  if(!g)return;
+  selectedSlot=null;
+  g.innerHTML=slots.map(function(s){
+    return '<div class="b-slot" onclick="selectSlot(this,\''+s+'\')">' + s + '</div>';
+  }).join('');
+}
+
+function selectSlot(el,slot){
+  selectedSlot=slot;
+  document.querySelectorAll('.b-slot').forEach(function(s){s.classList.remove('active');});
+  el.classList.add('active');
+  // Update button
+  var btn=document.getElementById('lpop-btn');
+  if(btn)btn.textContent='REQUEST VISIT →';
+}
+
+function openVisitBooking(propName){
+  lpopMode='booking';
+  lpopPropertyName=propName||'';
+  selectedSlot=null;
+  document.getElementById('lpop-wrap').classList.add('open');
+  document.getElementById('lpop-form').style.display='';
+  document.getElementById('lpop-ok').style.display='none';
+  // Update popup for booking mode
+  var title=document.querySelector('.lpop-title');
+  if(title)title.innerHTML='Schedule a Property<br>Visit';
+  var sub=document.querySelector('.lpop-sub');
+  if(sub)sub.textContent='Fill in your details and select a date & time for your visit.';
+  var bkFields=document.getElementById('booking-fields');
+  if(bkFields)bkFields.style.display='block';
+  var btn=document.getElementById('lpop-btn');
+  if(btn)btn.textContent='REQUEST VISIT →';
+  // Set today's date as default
+  var dateEl=document.getElementById('bk-date');
+  if(dateEl){dateEl.value=new Date().toISOString().split('T')[0];fetchSlots();}
+}
 
 async function syncFromDB() {
   try {
@@ -582,43 +637,76 @@ function om(ps){
 function cm(){document.getElementById('mw').classList.remove('open');document.body.style.overflow='';}
 function mn(d){if(!mImgs.length)return;mIdx=(mIdx+d+mImgs.length)%mImgs.length;document.getElementById('mi').src=mImgs[mIdx];document.getElementById('mc').textContent=(mIdx+1)+' / '+mImgs.length;}
 function submitLead(){
-  var name=document.getElementById('cf-n').value.trim();
-  if(!name){st('Please enter your name.',true);return;}
-  var lead={name:name,phone:document.getElementById('cf-p').value,email:document.getElementById('cf-e').value,property_interest:document.getElementById('cf-i').value+' Budget: '+document.getElementById('cf-b').value,notes:document.getElementById('cf-nt').value,status:'New',source:'Website',pipeline_stage:'New',score:60};
-  
-  // Direct Unified Lead Submission
-  const creds = JSON.parse(localStorage.getItem('pe_access')||'null');
-  const agentEmail = creds ? creds.username : 'sarah@propedge.ae';
-  
-  fetch('/api/leads', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ agentEmail, lead })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      document.getElementById('c-form').style.display='none';
-      document.getElementById('c-ok').style.display='block';
-      st('Inquiry sent! Agent notified via Resend.');
-    } else {
-      let errStr = data.error || 'Unknown Error';
-      if (data.details) {
-        errStr += ' (Supabase: ' + data.details.supabase + ', Mongo: ' + data.details.mongodb + ')';
-      }
-      st('Error: ' + errStr, true);
-    }
-  })
-  .catch(e => {
-    console.error('Submission Error:', e);
-    st('Network error. Lead saved locally.', true);
-  });
+  var name=document.getElementById('lp-name').value.trim();
+  var phone=document.getElementById('lp-phone')?.value.trim()||'';
+  var email=document.getElementById('lp-email')?.value.trim()||'';
 
-  // Fallback: save locally and sync
+  // --- BOOKING MODE ---
+  if(lpopMode==='booking'){
+    if(!name){st('Please enter your name.',true);return;}
+    if(!email){st('Please enter your email address.',true);return;}
+    var date=document.getElementById('bk-date')?.value||new Date().toISOString().split('T')[0];
+    var timeSlot=selectedSlot||'Time not selected';
+
+    var booking={
+      client_name:name,
+      client_phone:phone,
+      client_email:email,
+      property_name:lpopPropertyName||'Selected Property',
+      visit_date:date,
+      visit_time:timeSlot,
+      status:'pending',
+      source:'Website'
+    };
+
+    // *** SHOW SUCCESS IMMEDIATELY — don't wait for API ***
+    document.getElementById('lpop-form').style.display='none';
+    document.getElementById('lpop-ok').innerHTML='<div style="font-size:32px;margin-bottom:12px">✨</div>'
+      +'<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.3rem;color:#faf8f4;margin-bottom:8px">Visit Request Submitted!</div>'
+      +'<div style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.6">We received your request for <strong style="color:var(--goldl)">'+(booking.property_name)+'</strong>.<br>Date: '+date+' · Time: '+timeSlot+'<br><br>Check your email. We\'ll confirm shortly.</div>';
+    document.getElementById('lpop-ok').style.display='block';
+    st('Visit request submitted! We\'ll confirm shortly.');
+
+    // Save locally immediately
+    di(DB.BOOKINGS,booking);
+    di(DB.NOTIFICATIONS,{title:'📅 New Visit: '+name,description:'For: '+booking.property_name+' at '+timeSlot,type:'booking',icon:'📅',is_read:false,source:'Website'});
+    syncToDB();
+
+    // Send to API in background
+    var creds=JSON.parse(localStorage.getItem('pe_access')||'null');
+    var agentEmail=creds?creds.username:'saishivaraju.m2002@gmail.com';
+    fetch('/api/visits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentEmail:agentEmail,visit:booking})})
+      .then(function(r){return r.json();})
+      .catch(function(e){console.warn('Booking API Error:',e);});
+
+    setTimeout(closeLPop,4000);
+    return;
+  }
+
+  // --- LEAD MODE ---
+  if(!name){st('Please enter your name.',true);return;}
+  var lead={name:name,phone:phone,email:email,property_interest:document.getElementById('lp-interest')?.value||'Not specified',status:'New',source:'Website',pipeline_stage:'New',score:65};
+
+  // Show success immediately
+  document.getElementById('lpop-form').style.display='none';
+  document.getElementById('lpop-ok').style.display='block';
+  st('Details received! We will be in touch soon.');
+
+  // Save locally
   di(DB.LEADS,lead);
-  di(DB.NOTIFICATIONS,{title:'🚀 New Web Lead: '+name,description:'Interest: '+lead.property_interest,type:'lead',icon:'👤',is_read:false,source:'Website'});
+  di(DB.NOTIFICATIONS,{title:'🔥 New Lead: '+name,description:'Via website popup',type:'lead',icon:'👤',is_read:false,source:'Website'});
   syncToDB();
+
+  // Send to API in background
+  var creds2=JSON.parse(localStorage.getItem('pe_access')||'null');
+  var agentEmail2=creds2?creds2.username:'saishivaraju.m2002@gmail.com';
+  fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agentEmail:agentEmail2,lead:lead})})
+    .then(function(r){return r.json();})
+    .catch(function(e){console.warn('Lead API Error:',e);});
+
+  setTimeout(closeLPop,3000);
 }
+
 function submitBooking(property_name){
   var name=document.getElementById('lp-name').value.trim();
   var phone=document.getElementById('lp-phone').value.trim();
