@@ -1336,6 +1336,15 @@
       border-color: var(--accent)
     }
 
+    .notif-check {
+      margin-right: 8px;
+      cursor: pointer;
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
     /* SETTINGS */
     .settings-grid {
       display: grid;
@@ -2799,8 +2808,11 @@
       <!-- NOTIFICATIONS -->
       <div class="panel" id="panel-notifications">
         <div class="sec-head">
-          <div class="sec-title">Notifications</div><button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark
-            all read</button>
+          <div class="sec-title">Notifications</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-danger btn-sm" id="btn-del-selected" onclick="deleteSelectedNotifications()" style="display:none">Delete Selected</button>
+            <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+          </div>
         </div>
         <div class="notif-list" id="notif-list"></div>
       </div>
@@ -4211,7 +4223,16 @@ ${date}`;
     // NOTIFICATIONS
     // ================================================================
     function renderNotifications() {
-      document.getElementById('notif-list').innerHTML = state.notifications.map(n => `<div class="notif-item${n.is_read ? '' : ' unread'}" onclick="markRead('${n.id}')"><div style="font-size:20px;flex-shrink:0;margin-top:2px">${n.icon}</div><div><div style="font-size:13px;font-weight:500;margin-bottom:3px">${n.title}</div><div style="font-size:12px;color:var(--muted)">${n.description || ''}</div><div style="font-size:11px;color:var(--muted);margin-top:5px">${timeAgo(n.created_at)}</div></div></div>`).join('') || '<div class="table-empty">No notifications</div>';
+      document.getElementById('notif-list').innerHTML = state.notifications.map(n => `<div class="notif-item${n.is_read ? '' : ' unread'}" onclick="markRead('${n.id}')">
+        <input type="checkbox" class="notif-check" data-id="${n.id}" onclick="event.stopPropagation(); updateDeleteButtonVisibility()">
+        <div style="font-size:20px;flex-shrink:0;margin-top:2px">${n.icon}</div>
+        <div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:3px">${n.title}</div>
+          <div style="font-size:12px;color:var(--muted)">${n.description || ''}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:5px">${timeAgo(n.created_at)}</div>
+        </div>
+      </div>`).join('') || '<div class="table-empty">No notifications</div>';
+      updateDeleteButtonVisibility();
     }
 
     function markRead(id) {
@@ -4225,6 +4246,28 @@ ${date}`;
       state.notifications.forEach(n => { if (!n.is_read) DB.update(DB.NOTIFICATIONS, n.id, { is_read: true }); });
       state.notifications = DB.getAll(DB.NOTIFICATIONS);
       renderBadges(); renderNotifications(); toast('All marked read.');
+    }
+
+    function updateDeleteButtonVisibility() {
+      const selected = document.querySelectorAll('.notif-check:checked').length;
+      const btn = document.getElementById('btn-del-selected');
+      if (btn) btn.style.display = selected > 0 ? 'block' : 'none';
+    }
+
+    function deleteSelectedNotifications() {
+      const selectedChecks = document.querySelectorAll('.notif-check:checked');
+      if (selectedChecks.length === 0) return;
+      if (!confirm(`Delete ${selectedChecks.length} selected notifications?`)) return;
+
+      selectedChecks.forEach(cb => {
+        const id = cb.getAttribute('data-id');
+        DB.delete(DB.NOTIFICATIONS, id);
+      });
+
+      state.notifications = DB.getAll(DB.NOTIFICATIONS);
+      renderBadges();
+      renderNotifications();
+      toast(`${selectedChecks.length} notifications deleted.`);
     }
 
     // ================================================================
