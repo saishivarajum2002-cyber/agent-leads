@@ -169,6 +169,26 @@ app.post('/api/visits', async (req, res) => {
       });
     }
 
+    // 5. Save Notification to MongoDB PeNotifications
+    try {
+      let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+      if (snapshot) {
+        if (!snapshot.data.pe_notifications) snapshot.data.pe_notifications = [];
+        snapshot.data.pe_notifications.unshift({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+          title: 'Tour Request: ' + visit.client_name,
+          description: `Wants to visit ${visit.property_name} · ${visit.visit_date} ${visit.visit_time}`,
+          type: 'booking',
+          bookingId: visit.id,
+          icon: '📅',
+          is_read: false,
+          created_at: new Date().toISOString()
+        });
+        snapshot.markModified('data');
+        await snapshot.save();
+      }
+    } catch (e) { console.error('Notification Save Error:', e.message); }
+
     await pushNotification(agentEmail, 'new_visit', `New booking alert: ${visit.client_name} requested a visit.`);
 
     return res.json({ success: true, supabaseSaved: supabaseResult.success, mongodbSaved });
@@ -358,6 +378,25 @@ app.post('/api/notify-lead', async (req, res) => {
       message: `Hi,\n\nYou have a new lead!\n\n👤 Name: ${lead.name}\n📞 Phone: ${lead.phone || 'N/A'}\n🏠 Property Interest: ${lead.property_interest || 'N/A'}\n\nLog in to your dashboard to take action.`
     });
     
+    // Save Notification to MongoDB
+    try {
+      let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+      if (snapshot) {
+        if (!snapshot.data.pe_notifications) snapshot.data.pe_notifications = [];
+        snapshot.data.pe_notifications.unshift({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+          title: 'New Lead: ' + lead.name,
+          description: `Interested in ${lead.property_interest || 'Listing'}`,
+          type: 'lead',
+          icon: '👤',
+          is_read: false,
+          created_at: new Date().toISOString()
+        });
+        snapshot.markModified('data');
+        await snapshot.save();
+      }
+    } catch (e) { console.error('Notification Save Error:', e.message); }
+
     await pushNotification(agentEmail, 'new_lead', `New lead: ${lead.name}`);
     
     res.json({ success: true, emailSent: emailResult.success });

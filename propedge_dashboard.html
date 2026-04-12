@@ -2315,6 +2315,19 @@
           </div>
         </div>
 
+        <!-- PENDING APPROVALS -->
+        <div id="d-pending-approvals-wrap" style="display:none;margin-bottom:18px">
+          <div class="card" style="border-color:var(--accent)">
+            <div class="card-header" style="background:rgba(240,192,64,.05)">
+              <div class="card-title">🚨 Pending Visit Approvals</div>
+              <span id="d-pending-count" class="badge badge-new">0 Pending</span>
+            </div>
+            <div class="card-body" id="d-pending-approvals-list" style="padding:10px">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
         <!-- MAIN GRID -->
         <div class="dash-grid" style="margin-bottom:18px">
           <!-- Leads by status chart + recent leads -->
@@ -2489,6 +2502,17 @@
         <div class="sec-head">
           <div class="sec-title">Visit Scheduling</div><button class="btn btn-primary"
             onclick="openModal('addBooking')">+ Schedule Tour</button>
+        </div>
+
+        <div id="b-pending-approvals-wrap" style="display:none;margin-bottom:16px">
+          <div class="card" style="border-color:var(--accent)">
+            <div class="card-header" style="background:rgba(240,192,64,.05)">
+              <div class="card-title">Pending Approvals</div>
+            </div>
+            <div class="card-body" id="b-pending-approvals-list" style="padding:0">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
         </div>
         <div class="dash-grid">
           <div class="card">
@@ -3533,6 +3557,33 @@
         }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:14px">No visits today</div>';
       }
 
+      // Pending Approvals (All dates)
+      const pendingVisits = state.bookings.filter(b => b.status.toLowerCase() === 'pending');
+      const dPendingWrap = document.getElementById('d-pending-approvals-wrap');
+      const dPendingList = document.getElementById('d-pending-approvals-list');
+      if (dPendingWrap && dPendingList) {
+        if (pendingVisits.length > 0) {
+          dPendingWrap.style.display = 'block';
+          document.getElementById('d-pending-count').textContent = `${pendingVisits.length} Pending Approval${pendingVisits.length > 1 ? 's' : ''}`;
+          dPendingList.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:10px">
+            ${pendingVisits.map(b => `
+              <div class="visit-item" style="border-left:4px solid var(--accent)">
+                <div style="flex:1">
+                  <div style="font-weight:600;font-size:13px">${b.client_name}</div>
+                  <div style="font-size:11px;color:var(--muted)">${b.property_name} · 📅 ${b.visit_date} · 🕒 ${b.visit_time}</div>
+                </div>
+                <div class="visit-actions">
+                  <button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">Accept Request</button>
+                  <button class="btn btn-ghost btn-sm" onclick="updateBookingStatus('${b.id}','rejected')">Reject</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>`;
+        } else {
+          dPendingWrap.style.display = 'none';
+        }
+      }
+
       // Top property
       const topP = [...state.properties].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
       document.getElementById('d-top-prop').innerHTML = topP ? `<div style="font-size:28px;margin-bottom:6px">🏆</div><div style="font-weight:600">${topP.name}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${topP.views} views · $${fmtNum(topP.price)}</div>` : '<div style="color:var(--muted);font-size:13px">No properties yet</div>';
@@ -3923,20 +3974,28 @@
     }
 
     async function updateBookingStatus(id, status) {
+      // Local update
       DB.update(DB.BOOKINGS, id, { status });
       state.bookings = DB.getAll(DB.BOOKINGS);
       renderAll();
       
       // Sync to API
       try {
-        await fetch('/api/visits/' + id, {
+        const res = await fetch('/api/visits/' + id, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ agentEmail: state.agent.email, updates: { status } })
         });
-      } catch (e) { }
-      
-      toast(`Visit status: ${status}`);
+        const data = await res.json();
+        if (data.success) {
+          toast(`Visit ${status} successfully.`);
+          // Refresh state from DB to ensure local sync
+          syncFromDB().then(() => renderAll());
+        }
+      } catch (e) { 
+        toast('Failed to sync status update', true);
+        console.warn('API Visit Status Error:', e); 
+      }
     }
 
     function markVisitOutcome(id) {
@@ -3989,6 +4048,33 @@
       </div>
     </div>`;
       }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No bookings yet</div>';
+
+      // Pending Approvals List in Bookings Panel
+      const pendingVisits = state.bookings.filter(b => b.status.toLowerCase() === 'pending');
+      const bPendingWrap = document.getElementById('b-pending-approvals-wrap');
+      const bPendingList = document.getElementById('b-pending-approvals-list');
+      if (bPendingWrap && bPendingList) {
+        if (pendingVisits.length > 0) {
+          bPendingWrap.style.display = 'block';
+          bPendingList.innerHTML = `<table class="table" style="margin:0">
+            <tbody>
+              ${pendingVisits.map(b => `
+                <tr>
+                  <td style="font-weight:600;font-size:13px">${b.client_name}</td>
+                  <td style="font-size:12px;color:var(--muted)">${b.property_name}</td>
+                  <td style="font-size:12px">${b.visit_date} · ${b.visit_time}</td>
+                  <td style="text-align:right">
+                    <button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">Confirm</button>
+                    <button class="btn btn-danger btn-sm" style="margin-left:5px" onclick="updateBookingStatus('${b.id}','rejected')">Reject</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`;
+        } else {
+          bPendingWrap.style.display = 'none';
+        }
+      }
     }
 
     function populateBookingProps() {
@@ -4233,6 +4319,12 @@ ${date}`;
           <div style="font-size:13px;font-weight:500;margin-bottom:3px">${n.title}</div>
           <div style="font-size:12px;color:var(--muted)">${n.description || ''}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:5px">${timeAgo(n.created_at)}</div>
+          ${n.type === 'booking' && n.bookingId && !n.is_read ? `
+            <div style="display:flex;gap:8px;margin-top:10px" onclick="event.stopPropagation()">
+              <button class="btn btn-primary btn-sm" onclick="updateBookingStatus('${n.bookingId}', 'confirmed'); markRead('${n.id}')">Confirm</button>
+              <button class="btn btn-ghost btn-sm" onclick="updateBookingStatus('${n.bookingId}', 'rejected'); markRead('${n.id}')">Reject</button>
+            </div>
+          ` : ''}
         </div>
       </div>`).join('') || '<div class="table-empty">No notifications</div>';
       updateDeleteButtonVisibility();
