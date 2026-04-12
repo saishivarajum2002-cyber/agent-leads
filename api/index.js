@@ -242,6 +242,8 @@ app.patch('/api/visits/:id', async (req, res) => {
         }
 
         if (isConfirmed || isRescheduled) {
+          console.log(`📧 Preparing email for [${v.client_email || 'MISSING'}] | Confirmed: ${isConfirmed} | Rescheduled: ${isRescheduled}`);
+          
           const subject = isRescheduled ? `🔄 Visit Rescheduled: ${v.property_name}` : `✅ Your visit is confirmed: ${v.property_name}`;
           const msg = isRescheduled 
             ? `Hi ${v.client_name},\n\nYour property visit for ${v.property_name} has been rescheduled.\n\n📅 New Date: ${updates.visit_date || v.visit_date}\n🕒 New Time: ${updates.visit_time || v.visit_time}\n\nWe look forward to seeing you!`
@@ -249,17 +251,19 @@ app.patch('/api/visits/:id', async (req, res) => {
           
           if (v.client_email) {
             console.log(`📧 API: Sending Visit Confirmation TO CLIENT [${v.client_email}]`);
-            await sendEmail({ to: v.client_email, subject, message: msg });
+            const clientRes = await sendEmail({ to: v.client_email, subject, message: msg });
+            console.log(`📧 API: Client Email Result: ${clientRes.success ? 'SUCCESS' : 'FAILED: ' + JSON.stringify(clientRes.error)}`);
           } else {
             console.warn('⚠️ API: Client email missing in database for confirmation.');
           }
 
           console.log(`📧 API: Sending Status Update TO AGENT [${targetAgentEmail}]`);
-          await sendEmail({ 
+          const agentRes = await sendEmail({ 
             to: targetAgentEmail, 
             subject: `Update: Visit with ${v.client_name}`, 
             message: `The visit with ${v.client_name} for ${v.property_name} has been updated.\n\nStatus: ${updates.status || v.status}\nDate: ${updates.visit_date || v.visit_date}\nTime: ${updates.visit_time || v.visit_time}`
           });
+          console.log(`📧 API: Agent Email Result: ${agentRes.success ? 'SUCCESS' : 'FAILED: ' + JSON.stringify(agentRes.error)}`);
         }
       }
     } catch (e) {
@@ -352,6 +356,10 @@ app.post('/api/leads', async (req, res) => {
     } catch (e) { 
       console.error('Email Error:', e.message);
       emailResult.error = e.message;
+    }
+    if (emailResult.error) {
+      console.error('📧 Resend Error Response:', JSON.stringify(emailResult.error, null, 2));
+      return { success: false, error: emailResult.error };
     }
 
     // 4. Push Notification
