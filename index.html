@@ -439,7 +439,7 @@ function selSlot(el, time){
           <input type="date" class="b-date-sel" id="bk-date" onchange="fetchSlots()">
           <div class="b-grid" id="slots-grid"></div>
         </div>
-        <button class="lpop-sub-btn" id="lpop-btn" onclick="submitLeadPopup()">Get Exclusive Access →</button>
+        <button class="lpop-sub-btn" id="lpop-btn" onclick="submitLead()">Get Exclusive Access →</button>
       </div>
       <div id="lpop-ok" style="display:none;text-align:center;padding:16px 0">
         <div style="font-size:26px;margin-bottom:8px">✨</div>
@@ -453,6 +453,7 @@ function selSlot(el, time){
 var DB={AGENT:'pe_agent',LEADS:'pe_leads',PROPERTIES:'pe_properties',NOTIFICATIONS:'pe_notifications',BOOKINGS:'pe_bookings'};
 function dg(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
 function da(k){return dg(k)||[];}
+function st(m,e){var c=document.getElementById('tw');if(!c)return;var d=document.createElement('div');d.className='tm'+(e?' err':'');d.textContent=m;c.appendChild(d);setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove();},500);},3000);}
 
 async function syncFromDB() {
   try {
