@@ -236,6 +236,48 @@ footer{padding-bottom:70px}
 .b-slot.active{background:var(--gold);color:var(--dark);border-color:var(--gold)}
 .b-slot.busy{opacity:.3;pointer-events:none;background:rgba(255,255,255,.05)}
 .b-date-sel{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:11px 14px;color:#faf8f4;font-size:13px;font-family:'Jost',sans-serif;outline:none;margin-bottom:10px}
+/* ── FLOW MODALS (AI Chatbot, Agreement, Booking) ── */
+.flow-wrap{display:none;position:fixed;inset:0;background:rgba(5,5,4,.88);backdrop-filter:blur(18px);z-index:600;align-items:center;justify-content:center;padding:20px}
+.flow-wrap.open{display:flex}
+.flow-box{background:#0e0e0c;border:1px solid rgba(184,150,90,.25);width:100%;max-width:480px;border-radius:4px;overflow:hidden;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.7)}
+.flow-head{background:rgba(184,150,90,.08);border-bottom:1px solid rgba(184,150,90,.15);padding:18px 22px;display:flex;align-items:center;justify-content:space-between}
+.flow-step-badge{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);background:rgba(184,150,90,.12);border:1px solid rgba(184,150,90,.25);padding:3px 10px;border-radius:12px}
+.flow-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#faf8f4;margin-left:10px;flex:1}
+.flow-close{background:none;border:none;color:rgba(255,255,255,.3);font-size:17px;cursor:pointer;padding:2px 6px}
+.flow-close:hover{color:rgba(255,255,255,.7)}
+.flow-body{padding:22px 24px}
+.flow-progress{display:flex;gap:6px;margin-bottom:20px}
+.flow-prog-dot{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.08);transition:background .3s}
+.flow-prog-dot.done{background:var(--gold)}
+.flow-prog-dot.active{background:rgba(184,150,90,.5)}
+/* Chat bubble styles */
+.chat-bubble{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px 12px 12px 0;padding:14px 16px;margin-bottom:18px;font-size:13px;color:rgba(255,255,255,.75);line-height:1.7;position:relative}
+.chat-bubble::before{content:'🤖';position:absolute;top:-12px;left:10px;font-size:18px;background:#0e0e0c;padding:0 4px}
+.flow-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.flow-opt{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.65);padding:10px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:'Jost',sans-serif;text-align:left;transition:all .2s}
+.flow-opt:hover{border-color:rgba(184,150,90,.5);color:var(--gold);background:rgba(184,150,90,.06)}
+.flow-opt.selected{border-color:var(--gold);color:var(--gold);background:rgba(184,150,90,.1)}
+.flow-in{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);padding:11px 14px;color:#faf8f4;font-size:13px;font-family:'Jost',sans-serif;outline:none;transition:border-color .2s;border-radius:4px;margin-bottom:8px}
+.flow-in:focus{border-color:rgba(184,150,90,.5)}
+.flow-in::placeholder{color:rgba(255,255,255,.25)}
+.flow-next{width:100%;background:var(--gold);color:var(--dark);border:none;padding:13px;font-family:'Jost',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:all .2s;border-radius:3px;margin-top:6px}
+.flow-next:hover{background:var(--goldl);transform:translateY(-1px)}
+.flow-next:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.flow-note{font-size:11px;color:rgba(255,255,255,.25);text-align:center;margin-top:10px;line-height:1.6}
+/* Agreement styles */
+.agree-text{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);padding:14px 16px;height:160px;overflow-y:auto;font-size:11px;color:rgba(255,255,255,.4);line-height:1.8;margin-bottom:16px;border-radius:4px}
+.agree-check{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;cursor:pointer}
+.agree-check input{margin-top:3px;accent-color:var(--gold);cursor:pointer;width:14px;height:14px;flex-shrink:0}
+.agree-check span{font-size:12px;color:rgba(255,255,255,.55);line-height:1.5}
+.agree-sig-wrap{margin-bottom:14px}
+.agree-sig-label{font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px;display:block}
+/* Qual score bar */
+.qual-score-bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin:14px 0 6px}
+.qual-score-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.qual-score-text{font-size:11px;color:rgba(255,255,255,.35);margin-bottom:16px}
+.qual-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:14px}
+.qual-badge.high{background:rgba(46,204,138,.12);color:#2ecc8a;border:1px solid rgba(46,204,138,.3)}
+.qual-badge.low{background:rgba(224,80,96,.12);color:#e05060;border:1px solid rgba(224,80,96,.3)}
 </style>
 </head>
 <body>
@@ -252,7 +294,7 @@ footer{padding-bottom:70px}
     <p class="hero-sub">Where elite data-driven insights meet exclusive off-market access. Experience real estate at the pinnacle of prestige.</p>
     <div class="hero-btns">
       <button class="btn-g" onclick="goto('listings')">View Listings</button>
-      <button class="btn-o" onclick="goto('contact')">Book a Tour</button>
+      <button class="btn-o" onclick="startBookingFlow()">Book a Tour</button>
     </div>
   </div>
   <div class="h-stats">
@@ -355,46 +397,186 @@ footer{padding-bottom:70px}
   <div class="modal"><div class="m-imgs"><img id="mi" src="" class="m-img"><div class="m-nav"><button class="m-nb" onclick="mn(-1)">&#8249;</button><button class="m-nb" onclick="mn(1)">&#8250;</button></div><div id="mc" class="m-ctr"></div><button class="m-cl" onclick="cm()">X</button></div>
   <div class="m-body"><div class="m-top"><div><div class="m-title" id="mt"></div><div class="m-addr" id="ma"></div></div><div class="m-price" id="mp"></div></div><div class="m-tags" id="mtg"></div><div class="m-desc" id="md"></div><div class="m-foot"><button class="btn-g" onclick="cm();scheduleTourFromModal()">📅 Schedule Visit</button><button class="btn-g" style="background:rgba(184,150,90,.12);color:var(--goldl);border:1px solid rgba(184,150,90,.3)" onclick="cm();goto('contact')">Get Details</button><button class="btn-od" onclick="cm();goto('contact')">Contact Agent</button></div></div></div>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     STEP 1: AI PRE-QUALIFICATION CHATBOT MODAL
+═══════════════════════════════════════════════════════════════ -->
+<div class="flow-wrap" id="modal-qualify" onclick="if(event.target===this)closeFlow()">
+  <div class="flow-box">
+    <div class="flow-head">
+      <span class="flow-step-badge">Step 1 of 3</span>
+      <span class="flow-title">AI Pre-Qualification</span>
+      <button class="flow-close" onclick="closeFlow()">✕</button>
+    </div>
+    <div class="flow-body">
+      <div class="flow-progress">
+        <div class="flow-prog-dot active" id="prog1"></div>
+        <div class="flow-prog-dot" id="prog2"></div>
+        <div class="flow-prog-dot" id="prog3"></div>
+      </div>
+      <!-- Sub-step 1a: Collect name/email/phone -->
+      <div id="qual-step-contact">
+        <div class="chat-bubble">Hi! I'm your PropEdge AI assistant. Before we schedule a visit, I'd like to understand your needs better — it only takes 60 seconds! 😊<br><br>First, let's get your contact info:</div>
+        <input class="flow-in" id="q-name" placeholder="Your Full Name *">
+        <input class="flow-in" id="q-email" type="email" placeholder="Email Address *">
+        <input class="flow-in" id="q-phone" type="tel" placeholder="Phone Number">
+        <button class="flow-next" id="btn-q-contact" onclick="qualNextToStep2()">Continue →</button>
+      </div>
+      <!-- Sub-step 1b: Budget question -->
+      <div id="qual-step-budget" style="display:none">
+        <div class="chat-bubble">Great, <span id="q-name-display"></span>! 👋<br><br>💰 What is your <strong>approximate budget</strong> for this property?</div>
+        <div class="flow-opts" id="budget-opts">
+          <button class="flow-opt" onclick="selectOpt(this,'budget','Under $500K')">Under $500K</button>
+          <button class="flow-opt" onclick="selectOpt(this,'budget','$500K - $1M')">$500K – $1M</button>
+          <button class="flow-opt" onclick="selectOpt(this,'budget','$1M - $3M')">$1M – $3M</button>
+          <button class="flow-opt" onclick="selectOpt(this,'budget','$3M - $10M')">$3M – $10M</button>
+          <button class="flow-opt" onclick="selectOpt(this,'budget','$10M+')">$10M+</button>
+        </div>
+        <button class="flow-next" id="btn-q-budget" onclick="qualNextToStep3()" disabled>Next →</button>
+      </div>
+      <!-- Sub-step 1c: BHK + pre-approval -->
+      <div id="qual-step-bhk" style="display:none">
+        <div class="chat-bubble">🛏️ What <strong>bedroom configuration</strong> are you looking for?</div>
+        <div class="flow-opts" id="bhk-opts">
+          <button class="flow-opt" onclick="selectOpt(this,'bhk','Studio')">Studio</button>
+          <button class="flow-opt" onclick="selectOpt(this,'bhk','1 BHK')">1 BHK</button>
+          <button class="flow-opt" onclick="selectOpt(this,'bhk','2 BHK')">2 BHK</button>
+          <button class="flow-opt" onclick="selectOpt(this,'bhk','3 BHK')">3 BHK</button>
+          <button class="flow-opt" onclick="selectOpt(this,'bhk','4+ BHK')">4+ BHK</button>
+        </div>
+        <div class="chat-bubble" style="margin-top:16px">✅ Are you <strong>pre-approved</strong> for a mortgage or have sufficient funds ready?</div>
+        <div class="flow-opts" id="preapproval-opts">
+          <button class="flow-opt" onclick="selectOpt(this,'preapproval','yes')">Yes, I'm pre-approved / have funds ready</button>
+          <button class="flow-opt" onclick="selectOpt(this,'preapproval','working')">Working on it / In process</button>
+          <button class="flow-opt" onclick="selectOpt(this,'preapproval','no')">Not yet</button>
+        </div>
+        <button class="flow-next" id="btn-q-bhk" onclick="submitQualification()" disabled>Check My Eligibility →</button>
+        <p class="flow-note">Your info is private and only shared with the listing agent.</p>
+      </div>
+      <!-- Result screen -->
+      <div id="qual-result" style="display:none;text-align:center;padding:10px 0">
+        <div id="qual-result-icon" style="font-size:42px;margin-bottom:12px"></div>
+        <div id="qual-result-title" style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:#faf8f4;margin-bottom:6px"></div>
+        <div class="qual-score-bar"><div class="qual-score-fill" id="qual-score-fill"></div></div>
+        <div class="qual-score-text" id="qual-score-text"></div>
+        <div id="qual-result-msg" style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.7;margin-bottom:18px"></div>
+        <button class="flow-next" id="btn-to-agree" onclick="openAgreementModal()" style="display:none">Continue to Agreement →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     STEP 2: BUYER REPRESENTATION AGREEMENT MODAL  
+═══════════════════════════════════════════════════════════════ -->
+<div class="flow-wrap" id="modal-agreement" onclick="if(event.target===this)if(false)closeFlow()">
+  <div class="flow-box">
+    <div class="flow-head">
+      <span class="flow-step-badge">Step 2 of 3</span>
+      <span class="flow-title">Buyer Agreement</span>
+      <button class="flow-close" onclick="closeFlow()">✕</button>
+    </div>
+    <div class="flow-body">
+      <div class="flow-progress">
+        <div class="flow-prog-dot done" id="aprog1"></div>
+        <div class="flow-prog-dot active" id="aprog2"></div>
+        <div class="flow-prog-dot" id="aprog3"></div>
+      </div>
+      <div class="chat-bubble" style="--bubble-r:4px">📋 As required by real estate law (effective 2026), you must sign a <strong>Buyer Representation Agreement</strong> before scheduling a property visit.</div>
+      <div class="agree-text" id="agree-text-block">
+        BUYER REPRESENTATION AGREEMENT — PropEdge Real Estate
+        Agreement Version: v1.0 | Date: <span id="agree-date"></span>
+
+        1. PARTIES: This Buyer Representation Agreement ("Agreement") is entered into between PropEdge Real Estate ("Agent") and the undersigned Buyer.
+
+        2. SCOPE: The Agent agrees to represent the Buyer's interests in the search, evaluation, and acquisition of real property for a period of 90 days from the date of signing.
+
+        3. EXCLUSIVE REPRESENTATION: The Buyer agrees to work exclusively with PropEdge Real Estate for property viewings arranged through this platform.
+
+        4. DUTIES OF AGENT: The Agent agrees to: (a) Use reasonable efforts to locate properties meeting Buyer's needs; (b) Present all offers and counteroffers promptly; (c) Maintain confidentiality of Buyer's personal information.
+
+        5. DUTIES OF BUYER: The Buyer agrees to: (a) Cooperate with the Agent; (b) Provide accurate information; (c) Notify the Agent of any properties independently discovered.
+
+        6. COMPLIANCE: This agreement is designed to comply with RERA and applicable real estate regulations effective 2026, which require written buyer representation agreements prior to showings.
+
+        7. DIGITAL SIGNATURE: By typing your full name in the signature field and clicking "I Agree & Sign", you acknowledge that this constitutes a legally binding electronic signature equivalent to a handwritten signature.
+
+        8. TERMINATION: Either party may terminate this agreement with written notice. Any visits already scheduled remain subject to this agreement.
+
+        By signing below, you represent that you have read, understood, and agree to the terms of this Buyer Representation Agreement.
+      </div>
+      <label class="agree-check">
+        <input type="checkbox" id="agree-checkbox" onchange="checkAgreementReady()">
+        <span>I have read and understand the Buyer Representation Agreement above.</span>
+      </label>
+      <div class="agree-sig-wrap">
+        <label class="agree-sig-label">Your Digital Signature (Type Your Full Legal Name)</label>
+        <input class="flow-in" id="agree-sig" placeholder="Type your full name to sign..." oninput="checkAgreementReady()">
+      </div>
+      <button class="flow-next" id="btn-sign" onclick="signAgreement()" disabled>✍️ I Agree &amp; Sign — Proceed to Booking</button>
+      <p class="flow-note">🔒 Your signed agreement is securely stored and linked to your booking. <br>Timestamp: <span id="sig-timestamp"></span></p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     STEP 3: BOOKING MODAL (gated)
+═══════════════════════════════════════════════════════════════ -->
+<div class="flow-wrap" id="modal-booking" onclick="if(event.target===this)closeFlow()">
+  <div class="flow-box" style="max-width:500px">
+    <div class="flow-head">
+      <span class="flow-step-badge">Step 3 of 3</span>
+      <span class="flow-title">Schedule Your Visit</span>
+      <button class="flow-close" onclick="closeFlow()">✕</button>
+    </div>
+    <div class="flow-body">
+      <div class="flow-progress">
+        <div class="flow-prog-dot done"></div>
+        <div class="flow-prog-dot done"></div>
+        <div class="flow-prog-dot active"></div>
+      </div>
+      <div id="booking-form-inner">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:rgba(46,204,138,.06);border:1px solid rgba(46,204,138,.2);border-radius:4px">
+          <span style="color:#2ecc8a;font-size:16px">✅</span>
+          <span style="font-size:12px;color:rgba(255,255,255,.6)">Pre-qualified & agreement signed — you're all set!</span>
+        </div>
+        <div style="font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Property</div>
+        <input class="flow-in" id="bk2-property" placeholder="Property name" readonly style="color:var(--gold)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div style="font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Name</div>
+            <input class="flow-in" id="bk2-name" placeholder="Full Name *">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Phone</div>
+            <input class="flow-in" id="bk2-phone" placeholder="Phone Number">
+          </div>
+        </div>
+        <div style="font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Email</div>
+        <input class="flow-in" id="bk2-email" type="email" placeholder="Email Address *">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+          <div>
+            <div style="font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Date</div>
+            <input type="date" class="flow-in" id="bk2-date" onchange="loadBkSlots()">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px">Selected Time</div>
+            <div id="bk2-time-display" style="padding:11px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:4px;font-size:13px;color:rgba(255,255,255,.3)">Select below</div>
+          </div>
+        </div>
+        <div class="b-grid" id="bk2-slots"></div>
+        <button class="flow-next" id="btn-submit-bk" onclick="submitGatedBooking()" style="margin-top:14px">📅 Confirm Visit Request →</button>
+      </div>
+      <div id="booking-success" style="display:none;text-align:center;padding:10px 0">
+        <div style="font-size:48px;margin-bottom:14px">🎉</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:#faf8f4;margin-bottom:8px">Visit Request Confirmed!</div>
+        <div id="booking-success-detail" style="font-size:13px;color:rgba(255,255,255,.5);line-height:1.8;margin-bottom:16px"></div>
+        <div style="font-size:12px;color:rgba(46,204,138,.7);padding:10px;background:rgba(46,204,138,.06);border:1px solid rgba(46,204,138,.2);border-radius:4px">📱 A WhatsApp confirmation will be sent to your phone shortly.</div>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
-var selectedSlot = null;
-function scheduleTourFromModal(){
-  var pName = document.getElementById('mt').textContent;
-  cm(); // close property modal
-  // Use the new unified booking popup
-  if(typeof openVisitBooking === 'function'){
-    openVisitBooking(pName);
-  } else {
-    // fallback: open lead popup in booking mode
-    openLeadPopup();
-    document.getElementById('booking-fields').style.display = 'block';
-    var btn = document.getElementById('lpop-btn');
-    if(btn){ btn.textContent = 'REQUEST VISIT →'; btn.onclick = function(){ submitBookingLegacy(pName); }; }
-    var dateEl = document.getElementById('bk-date');
-    if(dateEl){ var t=new Date();t.setDate(t.getDate()+1);dateEl.value=t.toISOString().split('T')[0]; }
-    fetchSlotsStatic();
-  }
-}
-
-function fetchSlotsStatic(){
-  var slots=['9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM'];
-  var g=document.getElementById('slots-grid');
-  if(!g)return;
-  selectedSlot=null;
-  g.innerHTML=slots.map(function(s){
-    return '<div class="b-slot" onclick="selSlot(this,\''+s+'\')">'+s+'</div>';
-  }).join('');
-}
-
-async function fetchSlots(){
-  const date = document.getElementById('bk-date').value;
-  if(!date){fetchSlotsStatic();return;}
-  const grid = document.getElementById('slots-grid');
-  const slots = ['9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM'];
-  try {
-    const res = await fetch('/api/availability?date=' + date);
-    if(!res.ok) throw new Error('unavailable');
-    const data = await res.json();
-    const busy = data.busyTimes || [];
     grid.innerHTML = slots.map(s => {
       const isBusy = busy.includes(s);
       return `<div class="b-slot ${isBusy?'busy':''}" onclick="selSlot(this,'${s}')">${s}</div>`;
@@ -422,7 +604,7 @@ function selSlot(el, time){
   <div class="sticky-cta-btns">
     <button class="sticky-btn sticky-btn-out" onclick="goto('search')">Search Properties</button>
     <button class="sticky-btn sticky-btn-gold" onclick="goto('contact')">Get Details</button>
-    <button class="sticky-btn sticky-btn-gold" onclick="scheduleTourFromModal()" style="background:var(--dark);color:var(--goldl);border:1px solid rgba(184,150,90,.4)">📅 Schedule Visit</button>
+    <button class="sticky-btn sticky-btn-gold" onclick="startBookingFlow()" style="background:var(--dark);color:var(--goldl);border:1px solid rgba(184,150,90,.4)">📅 Schedule Visit</button>
   </div>
 </div>
 
@@ -868,7 +1050,7 @@ window.addEventListener('scroll',function(){
   }
 });
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){cm();closeLPop();}
+  if(e.key==='Escape'){cm();closeLPop();closeFlow();}
   if(document.getElementById('mw').classList.contains('open')){if(e.key==='ArrowRight')mn(1);if(e.key==='ArrowLeft')mn(-1);}
 });
 function openLeadPopup(){document.getElementById('lpop-wrap').classList.add('open');}

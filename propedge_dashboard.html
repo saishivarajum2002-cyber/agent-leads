@@ -2209,6 +2209,7 @@
           class="nav-badge green" id="badge-bookings">0</span></div>
       <div class="nav-item" onclick="showPanel('marketing',this)"><span class="icon"></span>Marketing</div>
       <div class="nav-item" onclick="showPanel('ai',this)"><span class="icon"></span>AI Tools</div>
+      <div class="nav-item" onclick="showPanel('documents',this)" id="nav-docs"><span class="icon"></span>Documents Vault<span class="nav-badge" id="badge-docs" style="background:var(--purple);color:#fff">0</span></div>
       <div class="nav-sec">Agency</div>
       <div class="nav-item" onclick="showPanel('analytics',this)"><span class="icon"></span>Analytics</div>
       <div class="nav-item" onclick="showPanel('team',this)"><span class="icon"></span>Team</div>
@@ -2935,7 +2936,87 @@
       </div>
 
     </div>
+
+      <!-- ══════════════════════════════════════════════════
+           DOCUMENTS VAULT PANEL
+      ══════════════════════════════════════════════════ -->
+      <div class="panel" id="panel-documents">
+        <div class="sec-head">
+          <div class="sec-title">🗂️ Documents Vault</div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div id="docs-status" style="font-size:12px;color:var(--muted)">Loading…</div>
+            <button class="btn btn-primary" onclick="loadDocuments()">↻ Refresh</button>
+          </div>
+        </div>
+        <!-- Filter chips -->
+        <div class="filter-row" id="docs-filter-row">
+          <div class="f-chip active" onclick="filterDocs('all',this)">All Documents</div>
+          <div class="f-chip" onclick="filterDocs('agreement',this)">📝 Agreements</div>
+          <div class="f-chip" onclick="filterDocs('id_proof',this)">🪪 ID Proofs</div>
+          <div class="f-chip" onclick="filterDocs('booking_form',this)">📅 Bookings</div>
+          <div class="f-chip" onclick="filterDocs('other',this)">📄 Other</div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-header">
+            <div class="card-title">Upload Document</div>
+            <span class="badge badge-confirmed" style="font-size:10px">Agent Upload</span>
+          </div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+              <div>
+                <label class="form-label">Document Type</label>
+                <select class="form-input" id="doc-type-sel">
+                  <option value="agreement">📝 Buyer Agreement</option>
+                  <option value="id_proof">🪪 ID Proof</option>
+                  <option value="booking_form">📅 Booking Form</option>
+                  <option value="other">📄 Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Lead ID / Booking ID (optional)</label>
+                <input class="form-input" id="doc-lead-id" placeholder="Link to lead ID">
+              </div>
+              <div>
+                <label class="form-label">Notes</label>
+                <input class="form-input" id="doc-notes" placeholder="Optional notes">
+              </div>
+            </div>
+            <label class="form-label">Select File (PDF, JPG, PNG — max 5MB)</label>
+            <input type="file" id="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.txt" style="margin-bottom:10px;color:var(--text);font-size:13px" onchange="previewDocFile(this)">
+            <div id="doc-file-preview" style="display:none;font-size:12px;color:var(--green);margin-bottom:8px"></div>
+            <button class="btn btn-primary" id="doc-upload-btn" onclick="uploadDocument()">⬆️ Upload Document</button>
+          </div>
+        </div>
+
+        <!-- Signed Agreements Section -->
+        <div class="card" style="margin-bottom:18px" id="agreements-card">
+          <div class="card-header">
+            <div class="card-title">✅ Signed Buyer Agreements</div>
+            <button class="btn btn-ghost btn-sm" onclick="loadAgreements()">Refresh</button>
+          </div>
+          <div class="card-body">
+            <div id="agreements-list"><div class="table-empty">Loading agreements…</div></div>
+          </div>
+        </div>
+
+        <!-- All Documents Grid -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📁 All Stored Documents</div>
+            <span id="docs-count" style="font-size:12px;color:var(--muted)">0 documents</span>
+          </div>
+          <div class="card-body">
+            <div id="docs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+              <div class="table-empty">Loading documents…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
   </div>
+</div>
 
   <!-- MODALS -->
   <div class="modal-overlay" id="modal-addLead">
@@ -4595,7 +4676,7 @@ ${date}`;
       document.getElementById('panel-' + name)?.classList.add('active');
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       if (el) el.classList.add('active');
-      const titles = { dashboard: 'Dashboard', leads: 'Lead Management', pipeline: 'CRM Pipeline', properties: 'Property Listings', map: 'Map View', bookings: 'Visit Scheduling', marketing: 'Marketing Tools', ai: 'AI Tools', analytics: 'Analytics', team: 'Team', notifications: 'Notifications', settings: 'Settings' };
+      const titles = { dashboard: 'Dashboard', leads: 'Lead Management', pipeline: 'CRM Pipeline', properties: 'Property Listings', map: 'Map View', bookings: 'Visit Scheduling', marketing: 'Marketing Tools', ai: 'AI Tools', analytics: 'Analytics', team: 'Team', notifications: 'Notifications', settings: 'Settings', documents: '🗂️ Documents Vault' };
       document.getElementById('panel-title').textContent = titles[name] || name;
       const ctas = { leads: '+ Add Lead', properties: '+ Add Listing', bookings: '+ Schedule Tour', dashboard: '+ Add Lead' };
       const cta = document.getElementById('main-cta');
@@ -4604,6 +4685,7 @@ ${date}`;
       if (name === 'map') initMap();
       if (name === 'bookings' || name === 'marketing') populateBookingProps();
       if (name === 'settings') { renderSettings(); renderIntegrations(); }
+      if (name === 'documents') { loadDocuments(); loadAgreements(); }
     }
 
     function openModal(id) {
@@ -4630,6 +4712,176 @@ ${date}`;
     });
 
     init();
+
+    // ================================================================
+    // DOCUMENTS VAULT
+    // ================================================================
+    var allDocs = [];
+    var allAgreements = [];
+    var currentDocFilter = 'all';
+
+    function previewDocFile(input) {
+      const file = input.files[0];
+      const preview = document.getElementById('doc-file-preview');
+      if (!file) { preview.style.display = 'none'; return; }
+      if (file.size > 5 * 1024 * 1024) { toast('File too large. Max 5MB.', true); input.value = ''; preview.style.display = 'none'; return; }
+      preview.style.display = 'block';
+      preview.textContent = '✅ Selected: ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+    }
+
+    async function uploadDocument() {
+      const fileInput = document.getElementById('doc-file-input');
+      const file = fileInput.files[0];
+      if (!file) { toast('Please select a file first.', true); return; }
+      const docType = document.getElementById('doc-type-sel').value;
+      const leadId = document.getElementById('doc-lead-id').value.trim();
+      const notes = document.getElementById('doc-notes').value.trim();
+      const btn = document.getElementById('doc-upload-btn');
+      btn.disabled = true; btn.textContent = 'Uploading...';
+
+      try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const base64 = e.target.result.split(',')[1];
+          try {
+            const res = await fetch('/api/documents', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                doc_type: docType,
+                file_name: file.name,
+                file_data: base64,
+                file_mime: file.type,
+                file_size_kb: Math.round(file.size / 1024),
+                lead_id: leadId || null,
+                notes: notes || null,
+                uploader: 'agent'
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              toast('Document uploaded successfully! 📄');
+              fileInput.value = '';
+              document.getElementById('doc-file-preview').style.display = 'none';
+              document.getElementById('doc-lead-id').value = '';
+              document.getElementById('doc-notes').value = '';
+              loadDocuments();
+            } else {
+              toast('Upload failed: ' + (data.error || 'Unknown error'), true);
+            }
+          } catch (err) {
+            toast('Upload failed (server offline?). File saved locally.', true);
+            // Save locally as fallback
+            allDocs.unshift({ id: 'local_' + Date.now(), doc_type: docType, file_name: file.name, file_size_kb: Math.round(file.size / 1024), notes, lead_id: leadId, uploader: 'agent', created_at: new Date().toISOString() });
+            renderDocGrid();
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch (e) {
+        toast('Error reading file: ' + e.message, true);
+      }
+      btn.disabled = false; btn.textContent = '⬆️ Upload Document';
+    }
+
+    async function loadDocuments() {
+      const statusEl = document.getElementById('docs-status');
+      if (statusEl) statusEl.textContent = 'Loading...';
+      try {
+        const res = await fetch('/api/documents');
+        const data = await res.json();
+        allDocs = data.data || [];
+        renderDocGrid();
+        const countEl = document.getElementById('docs-count');
+        if (countEl) countEl.textContent = allDocs.length + ' document' + (allDocs.length !== 1 ? 's' : '');
+        if (statusEl) statusEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+        const badgeEl = document.getElementById('badge-docs');
+        if (badgeEl) badgeEl.textContent = allDocs.length;
+      } catch (e) {
+        if (statusEl) statusEl.textContent = 'Server offline — showing empty vault';
+        allDocs = [];
+        renderDocGrid();
+      }
+    }
+
+    async function loadAgreements() {
+      try {
+        const res = await fetch('/api/all-agreements');
+        const data = await res.json();
+        allAgreements = data.data || [];
+        renderAgreementsList();
+      } catch (e) {
+        document.getElementById('agreements-list').innerHTML = '<div class="table-empty">Could not load agreements (server offline)</div>';
+      }
+    }
+
+    function renderAgreementsList() {
+      const el = document.getElementById('agreements-list');
+      if (!el) return;
+      if (!allAgreements.length) {
+        el.innerHTML = '<div class="table-empty">No signed agreements yet. Agreements are auto-saved when buyers sign on the website.</div>';
+        return;
+      }
+      el.innerHTML = '<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Signer</th><th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Email</th><th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Property</th><th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Signed At</th><th style="padding:8px 12px">Actions</th></tr></thead><tbody>' +
+        allAgreements.map(a => `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:10px 12px;font-weight:600">${a.signer_name}</td>
+          <td style="padding:10px 12px;color:var(--muted);font-size:12px">${a.signer_email || '—'}</td>
+          <td style="padding:10px 12px;font-size:12px">${a.property_name || '—'}</td>
+          <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${a.signed_at ? new Date(a.signed_at).toLocaleString() : '—'}</td>
+          <td style="padding:10px 12px">
+            <button class="btn btn-ghost btn-sm" onclick="sendWhatsApp('${a.signer_phone || ''}','${a.signer_name}')">💬 WhatsApp</button>
+          </td>
+        </tr>`).join('') +
+        '</tbody></table>';
+    }
+
+    function filterDocs(type, el) {
+      currentDocFilter = type;
+      document.querySelectorAll('#docs-filter-row .f-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      renderDocGrid();
+    }
+
+    function renderDocGrid() {
+      const grid = document.getElementById('docs-grid');
+      if (!grid) return;
+      const icons = { agreement: '📝', id_proof: '🪪', booking_form: '📅', other: '📄' };
+      const filtered = currentDocFilter === 'all' ? allDocs : allDocs.filter(d => d.doc_type === currentDocFilter);
+      if (!filtered.length) {
+        grid.innerHTML = '<div class="table-empty" style="grid-column:span 5">No documents found' + (currentDocFilter !== 'all' ? ' in this category' : '') + '.</div>';
+        return;
+      }
+      grid.innerHTML = filtered.map(doc => {
+        const icon = icons[doc.doc_type] || '📄';
+        const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString() : '—';
+        const size = doc.file_size_kb ? doc.file_size_kb + ' KB' : '—';
+        const colorMap = { agreement: 'rgba(240,192,64,.15)', id_proof: 'rgba(64,144,240,.1)', booking_form: 'rgba(46,204,138,.1)', other: 'rgba(255,255,255,.04)' };
+        return `<div style="background:${colorMap[doc.doc_type]||'rgba(255,255,255,.04)'};border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;position:relative">
+          <div style="font-size:28px">${icon}</div>
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${doc.file_name}">${doc.file_name}</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">${doc.doc_type?.replace(/_/g,' ')}</div>
+          <div style="font-size:11px;color:var(--muted)">${date} · ${size}</div>
+          ${doc.notes ? `<div style="font-size:11px;color:var(--muted);font-style:italic">${doc.notes}</div>` : ''}
+          ${doc.lead_id ? `<div style="font-size:11px;color:var(--accent)">Lead: ${doc.lead_id.slice(0,12)}...</div>` : ''}
+          ${doc.file_data ? `<button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="downloadDoc('${doc.file_name}','${doc.file_mime||'application/octet-stream'}','${doc.id}')">⬇️ Download</button>` : '<div style="font-size:10px;color:var(--muted)">No file data (metadata only)</div>'}
+        </div>`;
+      }).join('');
+    }
+
+    function downloadDoc(fileName, mime, docId) {
+      const doc = allDocs.find(d => d.id === docId);
+      if (!doc || !doc.file_data) { toast('No file data to download.', true); return; }
+      try {
+        const blob = new Blob([Uint8Array.from(atob(doc.file_data), c => c.charCodeAt(0))], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = fileName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        // Try as text
+        const a = document.createElement('a'); a.href = 'data:' + mime + ';base64,' + doc.file_data;
+        a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }
+    }
   </script>
 </body>
 
