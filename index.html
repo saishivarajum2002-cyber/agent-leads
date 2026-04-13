@@ -576,26 +576,7 @@ footer{padding-bottom:70px}
     </div>
   </div>
 </div>
-<script>
-    grid.innerHTML = slots.map(s => {
-      const isBusy = busy.includes(s);
-      return `<div class="b-slot ${isBusy?'busy':''}" onclick="selSlot(this,'${s}')">${s}</div>`;
-    }).join('');
-  } catch(e) {
-    // Fallback to static slots on any error
-    grid.innerHTML = slots.map(s => `<div class="b-slot" onclick="selSlot(this,'${s}')">${s}</div>`).join('');
-  }
-  selectedSlot = null;
-}
 
-function selSlot(el, time){
-  document.querySelectorAll('.b-slot').forEach(s => s.classList.remove('active'));
-  el.classList.add('active');
-  selectedSlot = time;
-  // Also update the main script's selectedSlot if it exists
-  if(typeof window.selectedSlot !== 'undefined') window.selectedSlot = time;
-}
-</script>
 <div class="tw" id="tw"></div>
 
 <!-- STICKY CTA BAR -->
