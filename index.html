@@ -237,9 +237,10 @@ footer{padding-bottom:70px}
 .b-slot.busy{opacity:.3;pointer-events:none;background:rgba(255,255,255,.05)}
 .b-date-sel{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:11px 14px;color:#faf8f4;font-size:13px;font-family:'Jost',sans-serif;outline:none;margin-bottom:10px}
 /* ── FLOW MODALS (AI Chatbot, Agreement, Booking) ── */
-.flow-wrap{display:none;position:fixed;inset:0;background:rgba(5,5,4,.88);backdrop-filter:blur(18px);z-index:600;align-items:center;justify-content:center;padding:20px}
-.flow-wrap.open{display:flex}
-.flow-box{background:#0e0e0c;border:1px solid rgba(184,150,90,.25);width:100%;max-width:480px;border-radius:4px;overflow:hidden;position:relative;box-shadow:0 32px 80px rgba(0,0,0,.7)}
+.flow-wrap{display:none;position:fixed;inset:0;background:rgba(5,5,4,.92);backdrop-filter:blur(20px);z-index:2000;align-items:center;justify-content:center;padding:20px;opacity:1!important}
+.flow-wrap.open{display:flex!important}
+.flow-box{background:#0e0e0c;border:1px solid rgba(184,150,90,.4);width:100%;max-width:480px;border-radius:6px;overflow:hidden;position:relative;box-shadow:0 40px 120px rgba(0,0,0,.9);animation:flowIn .4s cubic-bezier(0.16, 1, 0.3, 1)}
+@keyframes flowIn { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .flow-head{background:rgba(184,150,90,.08);border-bottom:1px solid rgba(184,150,90,.15);padding:18px 22px;display:flex;align-items:center;justify-content:space-between}
 .flow-step-badge{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);background:rgba(184,150,90,.12);border:1px solid rgba(184,150,90,.25);padding:3px 10px;border-radius:12px}
 .flow-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#faf8f4;margin-left:10px;flex:1}
@@ -1072,6 +1073,257 @@ var lpopShown=false;
 setTimeout(function(){
   if(!lpopShown){lpopShown=true;openLeadPopup();}
 },8000);
+
+// --- GATED FLOW LOGIC (AI, Agreement, Booking) ---
+let flowData = {
+  budget: null,
+  bhk: null,
+  preapproval: null,
+  qualToken: null,
+  agreeToken: null,
+  propertyName: ''
+};
+
+function startBookingFlow(propName) {
+  flowData.propertyName = propName || 'Selected Property';
+  closeFlow(); // clear any open ones
+  document.getElementById('modal-qualify').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFlow() {
+  document.querySelectorAll('.flow-wrap').forEach(w => w.classList.remove('open'));
+  document.body.style.overflow = '';
+}
+
+function selectOpt(el, type, val) {
+  // Clear others in the same group
+  const group = el.parentElement;
+  group.querySelectorAll('.flow-opt').forEach(opt => opt.classList.remove('selected'));
+  el.classList.add('selected');
+  flowData[type] = val;
+  
+  // Enable next button
+  if (type === 'budget') document.getElementById('btn-q-budget').disabled = false;
+  if (type === 'bhk' || type === 'preapproval') {
+    const bhkSel = document.querySelector('#bhk-opts .selected');
+    const paSel = document.querySelector('#preapproval-opts .selected');
+    if (bhkSel && paSel) document.getElementById('btn-q-bhk').disabled = false;
+  }
+}
+
+function qualNextToStep2() {
+  const name = document.getElementById('q-name').value.trim();
+  const email = document.getElementById('q-email').value.trim();
+  if(!name || !email) { st('Name and email are required.', true); return; }
+  
+  document.getElementById('q-name-display').textContent = name.split(' ')[0];
+  document.getElementById('qual-step-contact').style.display = 'none';
+  document.getElementById('qual-step-budget').style.display = 'block';
+  document.getElementById('prog2').classList.add('active');
+}
+
+function qualNextToStep3() {
+  document.getElementById('qual-step-budget').style.display = 'none';
+  document.getElementById('qual-step-bhk').style.display = 'block';
+  document.getElementById('prog3').classList.add('active');
+}
+
+async function submitQualification() {
+  const btn = document.getElementById('btn-q-bhk');
+  btn.disabled = true;
+  btn.textContent = 'Analyzing...';
+  
+  const payload = {
+    name: document.getElementById('q-name').value,
+    email: document.getElementById('q-email').value,
+    phone: document.getElementById('q-phone').value,
+    budget: flowData.budget,
+    bhk_preference: flowData.bhk,
+    pre_approval_status: flowData.preapproval
+  };
+
+  try {
+    const res = await fetch('/api/qualify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    
+    document.getElementById('qual-step-bhk').style.display = 'none';
+    document.getElementById('qual-result').style.display = 'block';
+    
+    const score = data.qualification_score || 0;
+    const isQual = data.is_qualified;
+    flowData.qualToken = data.session_token;
+    
+    // UI Update
+    const fill = document.getElementById('qual-score-fill');
+    fill.style.width = score + '%';
+    fill.style.background = isQual ? '#2ecc8a' : '#e05060';
+    document.getElementById('qual-score-text').textContent = 'Qualification Score: ' + score + '/100';
+    document.getElementById('qual-result-icon').textContent = isQual ? '✅' : '👋';
+    document.getElementById('qual-result-title').textContent = isQual ? 'You Qualify!' : 'Thank You';
+    document.getElementById('qual-result-msg').textContent = data.message;
+    
+    if (isQual) {
+      document.getElementById('btn-to-agree').style.display = 'block';
+      document.getElementById('prog1').classList.add('done');
+      document.getElementById('prog2').classList.add('done');
+      document.getElementById('prog3').classList.add('done');
+    }
+  } catch (e) {
+    console.error(e);
+    st('Error processing qualification. Please try again.', true);
+    btn.disabled = false;
+    btn.textContent = 'Check My Eligibility →';
+  }
+}
+
+function openAgreementModal() {
+  closeFlow();
+  document.getElementById('modal-agreement').classList.add('open');
+  document.getElementById('agree-date').textContent = new Date().toLocaleDateString();
+  document.getElementById('sig-timestamp').textContent = new Date().toLocaleString();
+}
+
+function checkAgreementReady() {
+  const checked = document.getElementById('agree-checkbox').checked;
+  const sig = document.getElementById('agree-sig').value.trim();
+  document.getElementById('btn-sign').disabled = !(checked && sig.length > 3);
+}
+
+async function signAgreement() {
+  const btn = document.getElementById('btn-sign');
+  btn.disabled = true;
+  btn.textContent = 'Signing...';
+  
+  const payload = {
+    signer_name: document.getElementById('agree-sig').value,
+    qualification_token: flowData.qualToken,
+    property_name: flowData.propertyName
+  };
+
+  try {
+    const res = await fetch('/api/agreements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      flowData.agreeToken = data.agreement_token;
+      st('Agreement signed successfully!');
+      setTimeout(openBookingModal, 1000);
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (e) {
+    st(e.message || 'Signature failed.', true);
+    btn.disabled = false;
+    btn.textContent = '✍️ I Agree & Sign';
+  }
+}
+
+function openBookingModal() {
+  closeFlow();
+  document.getElementById('modal-booking').classList.add('open');
+  document.getElementById('bk2-property').value = flowData.propertyName;
+  document.getElementById('bk2-name').value = document.getElementById('q-name').value;
+  document.getElementById('bk2-email').value = document.getElementById('q-email').value;
+  document.getElementById('bk2-phone').value = document.getElementById('q-phone').value;
+  
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateStr = tomorrow.toISOString().split('T')[0];
+  document.getElementById('bk2-date').value = dateStr;
+  document.getElementById('bk2-date').min = dateStr;
+  loadBkSlots();
+}
+
+async function loadBkSlots() {
+  const date = document.getElementById('bk2-date').value;
+  const grid = document.getElementById('bk2-slots');
+  grid.innerHTML = '<div style="color:rgba(255,255,255,.3);padding:10px">Loading slots...</div>';
+  
+  const slots = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
+  
+  try {
+    const res = await fetch('/api/availability?date=' + date);
+    const data = await res.json();
+    const busy = data.busyTimes || [];
+    
+    grid.innerHTML = slots.map(s => {
+      const isBusy = busy.includes(s);
+      return `<div class="b-slot ${isBusy?'busy':''}" onclick="selSlot(this,'${s}')">${s}</div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = slots.map(s => `<div class="b-slot" onclick="selSlot(this,'${s}')">${s}</div>`).join('');
+  }
+  selectedSlot = null;
+  document.getElementById('bk2-time-display').textContent = 'Select below';
+  document.getElementById('bk2-time-display').style.color = '';
+}
+
+function selSlot(el, time) {
+  document.querySelectorAll('#bk2-slots .b-slot').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  selectedSlot = time;
+  document.getElementById('bk2-time-display').textContent = time;
+  document.getElementById('bk2-time-display').style.color = 'var(--gold)';
+}
+
+async function submitGatedBooking() {
+  if (!selectedSlot) { st('Please select a time slot.', true); return; }
+  
+  const btn = document.getElementById('btn-submit-bk');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+  
+  const visit = {
+    client_name: document.getElementById('bk2-name').value,
+    client_email: document.getElementById('bk2-email').value,
+    client_phone: document.getElementById('bk2-phone').value,
+    property_name: flowData.propertyName,
+    visit_date: document.getElementById('bk2-date').value,
+    visit_time: selectedSlot,
+    qualification_token: flowData.qualToken,
+    agreement_token: flowData.agreeToken
+  };
+
+  try {
+    const res = await fetch('/api/visits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agentEmail: 'saishivaraju.m2002@gmail.com',
+        visit: visit
+      })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      document.getElementById('booking-form-inner').style.display = 'none';
+      document.getElementById('booking-success').style.display = 'block';
+      document.getElementById('booking-success-detail').innerHTML = `Property: ${visit.property_name}<br>Date: ${visit.visit_date} at ${visit.visit_time}`;
+      st('Visit requested successfully!');
+      setTimeout(closeFlow, 5000);
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (e) {
+    st(e.message || 'Booking failed.', true);
+    btn.disabled = false;
+    btn.textContent = '📅 Confirm Visit Request →';
+  }
+}
+
+function scheduleTourFromModal() {
+  const pName = document.getElementById('mt').textContent;
+  startBookingFlow(pName);
+}
+
 init();
 </script>
 </body>
