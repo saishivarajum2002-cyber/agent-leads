@@ -1218,13 +1218,10 @@ async function signAgreement() {
       st('Agreement signed successfully!');
       setTimeout(openBookingModal, 1000);
     } else {
-      throw new Error(data.error);
+      st('Sign-in Error: ' + (data.error || 'Invalid qualification status'), true);
+      btn.disabled = false;
+      btn.textContent = '✍️ I Agree & Sign';
     }
-  } catch (e) {
-    st(e.message || 'Signature failed.', true);
-    btn.disabled = false;
-    btn.textContent = '✍️ I Agree & Sign';
-  }
 }
 
 function openBookingModal() {
@@ -1310,13 +1307,10 @@ async function submitGatedBooking() {
       st('Visit requested successfully!');
       setTimeout(closeFlow, 5000);
     } else {
-      throw new Error(data.error);
+      st('Booking Error: ' + (data.error || 'Failed to save visit'), true);
+      btn.disabled = false;
+      btn.textContent = '📅 Confirm Visit Request →';
     }
-  } catch (e) {
-    st(e.message || 'Booking failed.', true);
-    btn.disabled = false;
-    btn.textContent = '📅 Confirm Visit Request →';
-  }
 }
 
 function scheduleTourFromModal() {
