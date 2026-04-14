@@ -14,6 +14,8 @@ const INTROS = [
   "Experience elevated living in this meticulously crafted residence.",
   "A masterpiece of contemporary architecture awaits in this stunning property.",
   "This outstanding residence offers the ultimate in luxury lifestyle and investment value.",
+  "Offering an unparalleled blend of sophistication and comfort, this residence is truly one of a kind.",
+  "Situated in a highly sought-after district, this home represents the pinnacle of modern urban living.",
 ];
 
 const FEATURE_PHRASES = {
@@ -124,16 +126,26 @@ function buildDescription(details) {
   // ── Extract bedrooms
   let bedPhrase = null;
   for (const [key, phrase] of Object.entries(BED_PHRASES)) {
-    // match "3br", "3 br", "3 bed", "3 bedrooms"
-    const pattern = new RegExp(`\\b${key}[\\s-]?(?:br|bed(?:room)?s?)?\\b`);
-    if (pattern.test(d) || d.includes(key + 'br') || d.includes(key + ' br')) {
+    // match "3br", "3 br", "3 bed", "3 bedrooms", "3bhk", "3 bhk"
+    const pattern = new RegExp(`\\b${key}[\\s-]?(?:br|bed(?:room)?s?|bhk)\\b`, 'i');
+    if (pattern.test(d)) {
       bedPhrase = phrase; break;
     }
   }
 
-  // ── Extract area (sqft/sqm)
-  const areaMatch = d.match(/(\d[\d,]*)\s*(?:sq\.?\s*ft|sqft|sq\.?\s*m|sqm|m²|ft²)/i);
+  // ── Extract area (sqft/sqm/sqrf)
+  const areaMatch = d.match(/(\d[\d,]*)\s*(?:sq\.?\s*ft|sqft|sq\.?\s*m|sqm|m²|ft²|sqrf)/i);
   const areaPhrase = areaMatch ? AREA_PHRASES(areaMatch[1]) : null;
+
+  // ── Extract location
+  let location = null;
+  const locMatch = d.match(/(?:located\s+in|in|at)\s+([^,.\n?!(]+)/i);
+  if (locMatch) {
+    location = locMatch[1].trim()
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
 
   // ── Extract price
   const priceMatch = d.match(/\$\s*([\d,.]+\s*[mk]?)/i) || d.match(/([\d,.]+\s*(?:million|m|k))/i);
@@ -146,15 +158,24 @@ function buildDescription(details) {
   }
 
   // ── Build sentence 1: intro
-  const s1 = pick(INTROS);
+  let s1 = pick(INTROS);
+  if (location) {
+    const locIntros = [
+      `Discover an extraordinary opportunity in the heart of ${location}.`,
+      `Nestled in the prestigious ${location} area, this remarkable residence redefines luxury living.`,
+      `Welcome to an exceptional home in ${location} where sophisticated design meets everyday comfort.`,
+      `Experience elevated living in this meticulously crafted residence located in ${location}.`,
+    ];
+    s1 = Math.random() > 0.3 ? pick(locIntros) : s1 + ` Ideally located in ${location}.`;
+  }
 
   // ── Build sentence 2: key property details
   const parts = [];
   if (bedPhrase) parts.push(bedPhrase);
   if (areaPhrase) parts.push(areaPhrase);
   const s2parts = parts.length
-    ? `Boasting ${parts.join(' and ')}, this ${propType} has been designed to impress.`
-    : `This exceptional ${propType} has been designed to the highest possible standard.`;
+    ? `Boasting ${parts.join(' and ')}, this ${propType} has been curated for the most discerning residents.`
+    : `This exceptional ${propType} has been finished to an international standard of luxury.`;
 
   // ── Build sentence 3: standout features
   let s3;

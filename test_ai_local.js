@@ -6,6 +6,7 @@ const tests = [
   'Studio, 450 sqft, fully furnished, smart home, Business Bay',
   '5BR mansion, 8000 sqft, pool, garden, garage, Emirates Hills, $5M',
   '4br penthouse, 5000 sqft, terrace, open plan, DIFC',
+  '3bhk 3000sqrf located in USA dallas',
 ];
 
 (async () => {
