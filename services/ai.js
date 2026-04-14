@@ -16,6 +16,17 @@ const INTROS = [
   "This outstanding residence offers the ultimate in luxury lifestyle and investment value.",
   "Offering an unparalleled blend of sophistication and comfort, this residence is truly one of a kind.",
   "Situated in a highly sought-after district, this home represents the pinnacle of modern urban living.",
+  "Prepare to be captivated by this exquisite residence, offering unmatched quality and style.",
+  "An architectural triumph in the heart of the city, perfectly designed for modern excellence.",
+  "Luxury meets lifestyle in this spectacular property, where every detail has been perfected.",
+  "Welcome home to a sanctuary of elegance, boasting refined finishes and grand spaces.",
+  "A prestigious residence that stands as a testament to fine design and premium craftsmanship.",
+];
+
+const ADJECTIVES = [
+  "stunning", "exquisite", "premium", "sophisticated", "magnificent", "refined", 
+  "exceptional", "remarkable", "breathtaking", "unmatched", "prestigious", "vibrant",
+  "truly elegant", "beautifully appointed", "masterfully designed"
 ];
 
 const FEATURE_PHRASES = {
@@ -76,6 +87,12 @@ const CLOSINGS = [
   "This is truly a home that sets the standard for luxury living.",
   "Properties of this caliber rarely come to market; act quickly.",
   "A once-in-a-generation opportunity to own an iconic residence.",
+  "Experience the height of luxury for yourself; contact us for a private tour.",
+  "Secure your future in one of the world's most desirable locations.",
+  "Refine your lifestyle with this exceptional residential offering.",
+  "A masterpiece of living that must be seen to be fully appreciated.",
+  "Don't wait to claim your place in this exclusive development.",
+  "The pinnacle of elite residency, now available for the discerning buyer.",
 ];
 
 const AREA_PHRASES = (sqft) => {
