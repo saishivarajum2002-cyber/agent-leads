@@ -1308,8 +1308,8 @@ async function submitGatedBooking() {
     if (data.success) {
       document.getElementById('booking-form-inner').style.display = 'none';
       document.getElementById('booking-success').style.display = 'block';
-      document.getElementById('booking-success-detail').innerHTML = `Property: ${visit.property_name}<br>Date: ${visit.visit_date} at ${visit.visit_time}`;
-      st('Visit requested successfully!');
+      document.getElementById('booking-success-detail').innerHTML = `Property: ${visit.property_name}<br>Date: ${visit.visit_date} at ${visit.visit_time}<br><strong style="color:#2ecc8a">✅ Confirmed</strong>`;
+      st('Visit confirmed successfully!');
       setTimeout(closeFlow, 5000);
     } else {
       st('Booking Error: ' + (data.error || 'Failed to save visit'), true);

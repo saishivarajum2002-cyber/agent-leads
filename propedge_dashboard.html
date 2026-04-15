@@ -2205,8 +2205,7 @@
           class="nav-badge" id="badge-props">0</span></div>
       <div class="nav-item" onclick="showPanel('map',this)"><span class="icon"></span>Map View</div>
       <div class="nav-sec">Client Tools</div>
-      <div class="nav-item" onclick="showPanel('bookings',this)"><span class="icon"></span>Property Visits<span
-          class="nav-badge green" id="badge-bookings">0</span></div>
+      <div class="nav-item" onclick="showPanel('bookings',this)"><span class="icon"></span>Appointments</div>
       <div class="nav-item" onclick="showPanel('marketing',this)"><span class="icon"></span>Marketing</div>
       <div class="nav-item" onclick="showPanel('ai',this)"><span class="icon"></span>AI Tools</div>
       <div class="nav-item" onclick="showPanel('documents',this)" id="nav-docs"><span class="icon"></span>Documents Vault<span class="nav-badge" id="badge-docs" style="background:var(--purple);color:#fff">0</span></div>
@@ -2316,18 +2315,7 @@
           </div>
         </div>
 
-        <!-- PENDING APPROVALS -->
-        <div id="d-pending-approvals-wrap" style="display:none;margin-bottom:18px">
-          <div class="card" style="border-color:var(--accent)">
-            <div class="card-header" style="background:rgba(240,192,64,.05)">
-              <div class="card-title">🚨 Pending Visit Approvals</div>
-              <span id="d-pending-count" class="badge badge-new">0 Pending</span>
-            </div>
-            <div class="card-body" id="d-pending-approvals-list" style="padding:10px">
-              <!-- Rendered via JS -->
-            </div>
-          </div>
-        </div>
+        <!-- PENDING APPROVALS REMOVED -->
 
         <!-- MAIN GRID -->
         <div class="dash-grid" style="margin-bottom:18px">
@@ -4148,40 +4136,15 @@
         <div class="booking-prop">${b.property_name || b.visit_date || '—'} · <span class="badge badge-${b.status.toLowerCase()}" style="font-size:10px">${b.status}</span></div>
       </div>
       <div style="display:flex;gap:5px;align-items:center">
-        ${b.status.toLowerCase() === 'pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">Confirm</button><button class="btn btn-danger btn-sm" onclick="updateBookingStatus('${b.id}','rejected')">Reject</button>` : ''}
-        ${b.status.toLowerCase() === 'confirmed' ? `<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsAppConfirmation('${b.id}')">💬 WhatsApp Chat</button>` : ''}
+        <button class="btn btn-whatsapp btn-sm" onclick="sendWhatsAppConfirmation('${b.id}')">💬 WhatsApp Chat</button>
         <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')" title="Delete Visit">🗑️</button>
       </div>
     </div>`;
       }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No bookings yet</div>';
 
-      // Pending Approvals List in Bookings Panel
-      const pendingVisits = state.bookings.filter(b => b.status.toLowerCase() === 'pending');
+      // Pending Approvals List REMOVED
       const bPendingWrap = document.getElementById('b-pending-approvals-wrap');
-      const bPendingList = document.getElementById('b-pending-approvals-list');
-      if (bPendingWrap && bPendingList) {
-        if (pendingVisits.length > 0) {
-          bPendingWrap.style.display = 'block';
-          bPendingList.innerHTML = `<table class="table" style="margin:0">
-            <tbody>
-              ${pendingVisits.map(b => `
-                <tr>
-                  <td style="font-weight:600;font-size:13px">${b.client_name}</td>
-                  <td style="font-size:12px;color:var(--muted)">${b.property_name}</td>
-                  <td style="font-size:12px">${b.visit_date} · ${b.visit_time}</td>
-                  <td style="text-align:right">
-                    <button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">Confirm</button>
-                    <button class="btn btn-ghost btn-sm" style="margin-left:5px" onclick="updateBookingStatus('${b.id}','rejected')">Reject</button>
-                    <button class="btn btn-danger btn-sm" style="margin-left:5px" onclick="deleteBooking('${b.id}')">Delete</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>`;
-        } else {
-          bPendingWrap.style.display = 'none';
-        }
-      }
+      if (bPendingWrap) bPendingWrap.style.display = 'none';
     }
 
     function sendWhatsAppConfirmation(id) {
@@ -4690,7 +4653,7 @@ ${date}`;
       document.getElementById('panel-' + name)?.classList.add('active');
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       if (el) el.classList.add('active');
-      const titles = { dashboard: 'Dashboard', leads: 'Lead Management', pipeline: 'CRM Pipeline', properties: 'Property Listings', map: 'Map View', bookings: 'Visit Scheduling', marketing: 'Marketing Tools', ai: 'AI Tools', analytics: 'Analytics', team: 'Team', notifications: 'Notifications', settings: 'Settings', documents: '🗂️ Documents Vault' };
+      const titles = { dashboard: 'Dashboard', leads: 'Lead Management', pipeline: 'CRM Pipeline', properties: 'Property Listings', map: 'Map View', bookings: 'Confirmed Appointments', marketing: 'Marketing Tools', ai: 'AI Tools', analytics: 'Analytics', team: 'Team', notifications: 'Notifications', settings: 'Settings', documents: '🗂️ Documents Vault' };
       document.getElementById('panel-title').textContent = titles[name] || name;
       const ctas = { leads: '+ Add Lead', properties: '+ Add Listing', bookings: '+ Schedule Tour', dashboard: '+ Add Lead' };
       const cta = document.getElementById('main-cta');
