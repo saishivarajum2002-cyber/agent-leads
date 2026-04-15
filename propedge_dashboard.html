@@ -3516,6 +3516,15 @@
     // INIT
     // ================================================================
     async function init() {
+      const loader = document.getElementById('dashboard-loader');
+      const statusEl = document.getElementById('loader-status');
+      const hideLoader = () => {
+        if (loader && !loader.classList.contains('hidden')) {
+          loader.classList.add('hidden');
+          setTimeout(() => { if (loader.parentNode) loader.remove(); }, 800);
+        }
+      };
+      setTimeout(hideLoader, 3000);
       try {
         console.log('🚀 Dashboard initializing...');
 
@@ -3534,14 +3543,15 @@
         // 3. Background Sync (Non-blocking)
         syncFromDB().then(() => {
           console.log('✅ Background sync complete.');
-          // Re-load state if sync changed something
+          // Re-load state
           state.agent = DB.get(DB.AGENT) || {};
           state.leads = DB.getAll(DB.LEADS);
           state.properties = DB.getAll(DB.PROPERTIES);
           state.bookings = DB.getAll(DB.BOOKINGS);
           state.notifications = DB.getAll(DB.NOTIFICATIONS);
           renderAll();
-        }).catch(err => console.warn('Cloud sync unavailable:', err.message));
+        }).catch(err => console.warn('Cloud sync unavailable:', err.message))
+          .finally(() => hideLoader());
 
         // 4. Integrations check
         fetch('/api/integration-status?email=' + state.agent.email)
@@ -3553,6 +3563,7 @@
 
       } catch (err) {
         console.error('Critical Dashboard Init Error:', err);
+        hideLoader();
       }
     }
 
