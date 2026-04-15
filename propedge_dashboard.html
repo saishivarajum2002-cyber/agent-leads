@@ -2242,14 +2242,6 @@
 </head>
 
 <body onload="init()">
-  <!-- PRE-LOADER -->
-  <div id="dashboard-loader" class="pe-loader-overlay">
-    <div class="pe-loader-content">
-      <div class="pe-spinner"></div>
-      <div class="pe-loader-text">PropEdge<span>.</span></div>
-      <div id="loader-status" class="pe-loader-subtext">Initializing secure session...</div>
-    </div>
-  </div>
 
   <aside class="sidebar">
     <div class="logo">
@@ -3502,21 +3494,10 @@
     // INIT
     // ================================================================
     async function init() {
-      const loader = document.getElementById('dashboard-loader');
-      const statusEl = document.getElementById('loader-status');
-      
-      const hideLoader = () => {
-        if (loader && !loader.classList.contains('hidden')) {
-          loader.classList.add('hidden');
-          setTimeout(() => { if (loader.parentNode) loader.remove(); }, 600);
-        }
-      };
-
-      // FAIL-SAFE: Hide loader after 3 seconds no matter what
-      setTimeout(hideLoader, 3000);
-
       try {
-        // 1. Seed & Load Local State Immediately
+        console.log('🚀 Dashboard initializing...');
+        
+        // 1. Seed & Load Local State
         DB.ensureAgent();
         state.agent = DB.get(DB.AGENT) || {};
         state.leads = DB.getAll(DB.LEADS);
@@ -3525,13 +3506,12 @@
         state.notifications = DB.getAll(DB.NOTIFICATIONS);
         state.options = DB.get('pe_opts') || { email: true, sms: true, whatsapp: true, auto: true };
 
-        // 2. Initial Render (Instant)
+        // 2. Initial Render
         renderAll();
         
-        // 3. Background Sync (Does not block the UI)
-        if (statusEl) statusEl.textContent = 'Updating...';
-        
+        // 3. Background Sync (Non-blocking)
         syncFromDB().then(() => {
+          console.log('✅ Background sync complete.');
           // Re-load state if sync changed something
           state.agent = DB.get(DB.AGENT) || {};
           state.leads = DB.getAll(DB.LEADS);
@@ -3539,11 +3519,9 @@
           state.bookings = DB.getAll(DB.BOOKINGS);
           state.notifications = DB.getAll(DB.NOTIFICATIONS);
           renderAll();
-        }).finally(() => {
-          hideLoader();
-        });
+        }).catch(err => console.warn('Cloud sync unavailable:', err.message));
 
-        // 4. Real Integration Status
+        // 4. Integrations check
         fetch('/api/integration-status?email=' + state.agent.email)
           .then(r => r.json())
           .then(intRes => {
@@ -3552,9 +3530,12 @@
           }).catch(() => {});
 
       } catch (err) {
-        console.error('PropEdge Init Error:', err);
-        hideLoader();
+        console.error('Critical Dashboard Init Error:', err);
       }
+    }
+
+    // Ensure initialization fires
+    window.addEventListener('DOMContentLoaded', init);
 
       // OAuth Listener
       window.addEventListener('message', async (e) => {
@@ -3666,7 +3647,7 @@
     // ================================================================
     // DASHBOARD
     // ================================================================
-    function renderDashboard() {
+    function renderAnalytics() {
       const closed = state.leads.filter(l => l.status === 'Closed');
       const totalRev = closed.length * 920000;
       const newCount = state.leads.filter(l => l.status === 'New').length;
@@ -3733,15 +3714,20 @@
       // Pending Approvals List REMOVED
       const dPendingWrap = document.getElementById('d-pending-approvals-wrap');
       if (dPendingWrap) dPendingWrap.style.display = 'none';
-    }
 
       // Top property
       const topP = [...state.properties].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
-      document.getElementById('d-top-prop').innerHTML = topP ? `<div style="font-size:28px;margin-bottom:6px">🏆</div><div style="font-weight:600">${topP.name}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${topP.views} views · $${fmtNum(topP.price)}</div>` : '<div style="color:var(--muted);font-size:13px">No properties yet</div>';
+      const dTopProp = document.getElementById('d-top-prop');
+      if (dTopProp) {
+        dTopProp.innerHTML = topP ? `<div style="font-size:28px;margin-bottom:6px">🏆</div><div style="font-weight:600">${topP.name}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${topP.views} views · $${fmtNum(topP.price)}</div>` : '<div style="color:var(--muted);font-size:13px">No properties yet</div>';
+      }
 
       // Next booking
-      const nb = state.bookings.filter(b => b.visit_date >= today && b.status.toLowerCase() !== 'rejected').sort((a, b) => a.visit_date.localeCompare(b.visit_date))[0];
-      document.getElementById('d-next-booking').innerHTML = nb ? `<div style="font-size:28px;margin-bottom:6px">📅</div><div style="font-weight:600">${nb.visit_date}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${nb.client_name} · ${nb.visit_time || ''}</div><div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="btn btn-primary btn-sm" onclick="updateBookingStatus('${nb.id}','confirmed')">Confirm</button></div>` : '<div style="color:var(--muted);font-size:13px">No upcoming tours</div>';
+      const nb = state.bookings.filter(b => b.visit_date >= today && (b.status || '').toLowerCase() !== 'rejected').sort((a, b) => a.visit_date.localeCompare(b.visit_date))[0];
+      const dNextBooking = document.getElementById('d-next-booking');
+      if (dNextBooking) {
+        dNextBooking.innerHTML = nb ? `<div style="font-size:28px;margin-bottom:6px">📅</div><div style="font-weight:600">${nb.visit_date}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${nb.client_name} · ${nb.visit_time || ''}</div><div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="btn btn-primary btn-sm" onclick="updateBookingStatus('${nb.id}','confirmed')">Confirm</button></div>` : '<div style="color:var(--muted);font-size:13px">No upcoming tours</div>';
+      }
     }
 
     // ================================================================
