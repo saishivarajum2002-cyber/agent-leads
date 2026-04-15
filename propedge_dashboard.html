@@ -3319,8 +3319,9 @@
           if (Object.keys(data).length > 0) {
             let changed = false;
             for (const key in data) {
-              if (localStorage.getItem(key) !== data[key]) {
-                localStorage.setItem(key, data[key]);
+              const val = typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key]);
+              if (localStorage.getItem(key) !== val) {
+                localStorage.setItem(key, val);
                 changed = true;
               }
             }
@@ -3561,7 +3562,7 @@
     function renderBadges() {
       const newLeads = state.leads.filter(l => l.status === 'New').length;
       const unread = state.notifications.filter(n => !n.is_read).length;
-      const pending = state.bookings.filter(b => b.status === 'Pending').length;
+      const pending = state.bookings.filter(b => (b.status || '').toLowerCase() === 'pending').length;
       document.getElementById('badge-leads').textContent = newLeads;
       document.getElementById('badge-props').textContent = state.properties.length;
       document.getElementById('badge-bookings').textContent = pending;

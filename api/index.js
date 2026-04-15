@@ -408,8 +408,21 @@ app.post('/api/visits', async (req, res) => {
     try {
       let snapshot = await DataSnapshot.findOne({ email: agentEmail });
       if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: { pe_bookings: [] } });
-      if (!snapshot.data.pe_bookings) snapshot.data.pe_bookings = [];
-      snapshot.data.pe_bookings.unshift({ ...visit, id: realId, created_at: new Date().toISOString() });
+      
+      let bookings = snapshot.data.pe_bookings || [];
+      // Handle the case where the frontend stored this as a stringified JSON in MongoDB
+      if (typeof bookings === 'string') {
+        try { bookings = JSON.parse(bookings); } catch(e) { bookings = []; }
+      }
+      
+      const newVisit = { ...visit, id: realId, status: visit.status || 'pending', created_at: new Date().toISOString() };
+      bookings.unshift(newVisit);
+      
+      // Keep it consistent with dashboard's preference if it was a string
+      snapshot.data.pe_bookings = typeof snapshot.data.pe_bookings === 'string' 
+        ? JSON.stringify(bookings) 
+        : bookings;
+        
       snapshot.markModified('data');
       await snapshot.save();
       mongodbSaved = true;
@@ -613,11 +626,20 @@ app.delete('/api/visits/:id', async (req, res) => {
     const supabaseResult = await deleteVisitFromSupabase(id);
     if (agentEmail) {
       await connectDB();
-      const snapshot = await DataSnapshot.findOne({ email: agentEmail });
+      let snapshot = await DataSnapshot.findOne({ email: agentEmail });
       if (snapshot && snapshot.data.pe_bookings) {
-        snapshot.data.pe_bookings = snapshot.data.pe_bookings.filter(v => v.id !== id);
-        snapshot.markModified('data');
-        await snapshot.save();
+        let bookings = snapshot.data.pe_bookings;
+        let wasString = typeof bookings === 'string';
+        if (wasString) {
+          try { bookings = JSON.parse(bookings); } catch(e) { bookings = []; }
+        }
+        
+        if (Array.isArray(bookings)) {
+          snapshot.data.pe_bookings = bookings.filter(v => v.id !== id);
+          if (wasString) snapshot.data.pe_bookings = JSON.stringify(snapshot.data.pe_bookings);
+          snapshot.markModified('data');
+          await snapshot.save();
+        }
       }
     }
     res.json({ success: true, supabaseDeleted: supabaseResult.success });
@@ -734,17 +756,21 @@ app.post('/api/notify-lead', async (req, res) => {
     try {
       let snapshot = await DataSnapshot.findOne({ email: agentEmail });
       if (snapshot) {
-        if (!snapshot.data.pe_notifications) snapshot.data.pe_notifications = [];
-        snapshot.data.pe_notifications.unshift({
-          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-          title: 'New Lead: ' + lead.name,
-          description: `Interested in ${lead.property_interest || 'Listing'}`,
-          type: 'lead', icon: '👤', is_read: false, created_at: new Date().toISOString()
-        });
-        snapshot.markModified('data');
-        await snapshot.save();
+        if (!snapshot.data.pe_leads) snapshot.data.pe_leads = [];
+        let leads = snapshot.data.pe_leads;
+        let wasString = typeof leads === 'string';
+        if (wasString) {
+          try { leads = JSON.parse(leads); } catch(e) { leads = []; }
+        }
+        
+        if (Array.isArray(leads)) {
+          leads.unshift(lead);
+          snapshot.data.pe_leads = wasString ? JSON.stringify(leads) : leads;
+          snapshot.markModified('data');
+          await snapshot.save();
+        }
       }
-    } catch (e) {}
+    } catch (e) { }
     await pushNotification(agentEmail, 'new_lead', `New lead: ${lead.name}`);
     res.json({ success: true, emailSent: emailResult.success });
   } catch (error) {
