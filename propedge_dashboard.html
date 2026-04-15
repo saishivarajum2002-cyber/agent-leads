@@ -3398,7 +3398,11 @@
               // Sync state with local storage
               state.leads = DB.getAll(DB.LEADS);
               state.properties = DB.getAll(DB.PROPERTIES);
-              state.bookings = DB.getAll(DB.BOOKINGS);
+              
+              const todayStr = new Date().toISOString().split('T')[0];
+              const syncedBookings = DB.getAll(DB.BOOKINGS);
+              state.bookings = syncedBookings.filter(b => b.visit_date === todayStr);
+
               state.notifications = DB.getAll(DB.NOTIFICATIONS);
 
               // Check for new items from website sync
@@ -3531,13 +3535,23 @@
         // 1. Seed & Load Local State
         DB.ensureAgent();
         state.agent = DB.get(DB.AGENT) || {};
+
+        // DATA CLEANUP: Only keep bookings from "today"
+        const todayStr = new Date().toISOString().split('T')[0];
+        const allBookings = DB.getAll(DB.BOOKINGS);
+        const filteredBookings = allBookings.filter(b => b.visit_date === todayStr);
+        if (allBookings.length !== filteredBookings.length) {
+          localStorage.setItem(DB.BOOKINGS, JSON.stringify(filteredBookings));
+          console.log('🧹 Dashboard Cleaned. Bookings preserved:', filteredBookings.length);
+        }
+
         state.leads = DB.getAll(DB.LEADS);
         state.properties = DB.getAll(DB.PROPERTIES);
-        state.bookings = DB.getAll(DB.BOOKINGS);
+        state.bookings = filteredBookings;
         state.notifications = DB.getAll(DB.NOTIFICATIONS);
         state.options = DB.get('pe_opts') || { email: true, sms: true, whatsapp: true, auto: true };
 
-        // 2. Initial Render
+        // 2. Initial Render (Instant)
         renderAll();
 
         // 3. Background Sync (Non-blocking)
@@ -4211,40 +4225,79 @@
 
 
     function renderBookings() {
-      // Calendar
-      const booked = new Set(state.bookings.map(b => b.visit_date));
+      // 1. Dynamic Calendar
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const todayDate = now.getDate();
+      const todayStr = now.toISOString().split('T')[0];
+      
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const calLabel = document.getElementById('cal-month-year');
+      if (calLabel) calLabel.textContent = `${monthNames[month]} ${year}`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInPrevMonth = new Date(year, month, 0).getDate();
+
       const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
       let html = days.map(d => `<div class="cal-day-label">${d}</div>`).join('');
-      for (let i = 0; i < 6; i++) html += `<div class="cal-day other-month">${23 + i}</div>`;
-      html += `<div class="cal-day other-month">1</div>`;
-      for (let d = 2; d <= 31; d++) {
-        const ds = `2026-03-${String(d).padStart(2, '0')}`;
-        const isToday = d === 22;
-        const hasEvent = booked.has(ds);
-        html += `<div class="cal-day${isToday ? ' today' : ''}${hasEvent ? ' has-event' : ''}">${d}</div>`;
+
+      // Fill previous month days
+      for (let i = firstDay - 1; i >= 0; i--) {
+        html += `<div class="cal-day other-month">${daysInPrevMonth - i}</div>`;
       }
+
+      const booked = new Set(state.bookings.map(b => b.visit_date));
+
+      // Fill current month days
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isToday = d === todayDate && month === now.getMonth() && year === now.getFullYear();
+        const hasEvent = booked.has(ds);
+        html += `<div class="cal-day${isToday ? ' today' : ''}${hasEvent ? ' has-event' : ''}" onclick="showBookingsForDate('${ds}')">${d}</div>`;
+      }
+
+      // Fill next month days
+      const totalCells = html.split('cal-day').length - 1;
+      const remaining = 42 - totalCells + 7; // We want roughly 6 rows
+      for (let i = 1; i <= (42 - (daysInMonth + firstDay)); i++) {
+        html += `<div class="cal-day other-month">${i}</div>`;
+      }
+
       document.getElementById('cal-grid').innerHTML = html;
 
-      // Booking list
-      document.getElementById('booking-list').innerHTML = state.bookings.slice(0, 6).map(b => {
-        const isMeet = (b.meeting_link || '').includes('meet.google');
-        return `
-    <div class="booking-item">
-      <div class="booking-time">${b.visit_time || '—'}</div>
-      <div class="booking-info">
-        <div class="booking-name">${b.client_name}</div>
-        <div class="booking-prop">${b.property_name || b.visit_date || '—'} · <span class="badge badge-${b.status.toLowerCase()}" style="font-size:10px">${b.status}</span></div>
-      </div>
-      <div style="display:flex;gap:5px;align-items:center">
-        <button class="btn btn-whatsapp btn-sm" onclick="sendWhatsAppConfirmation('${b.id}')">💬 WhatsApp Chat</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')" title="Delete Visit">🗑️</button>
-      </div>
-    </div>`;
-      }).join('') || '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No bookings yet</div>';
+      // 2. Booking List
+      const bookingListEl = document.getElementById('booking-list');
+      if (bookingListEl) {
+        bookingListEl.innerHTML = state.bookings.length ? state.bookings.map(b => `
+          <div class="booking-item">
+            <div class="booking-time">${b.visit_time || '—'}</div>
+            <div class="booking-info">
+              <div class="booking-name">${b.client_name}</div>
+              <div class="booking-prop">${b.property_name || b.visit_date || '—'} · <span class="badge badge-${(b.status || 'pending').toLowerCase()}" style="font-size:10px">${b.status || 'Pending'}</span></div>
+            </div>
+            <div style="display:flex;gap:5px;align-items:center">
+              <button class="btn btn-whatsapp btn-sm" onclick="sendWhatsAppConfirmation('${b.id}')">💬 WhatsApp Chat</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')" title="Delete Visit">🗑️</button>
+            </div>
+          </div>`)
+          .join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No property visits scheduled for today</div>';
+      }
 
       // Pending Approvals List REMOVED
       const bPendingWrap = document.getElementById('b-pending-approvals-wrap');
       if (bPendingWrap) bPendingWrap.style.display = 'none';
+    }
+
+    function showBookingsForDate(date) {
+      const filtered = state.bookings.filter(b => b.visit_date === date);
+      if (filtered.length === 0) {
+        toast('No visits scheduled for ' + date);
+        return;
+      }
+      // Highlight them or scroll to them? For now, just toast
+      toast(filtered.length + ' visit(s) scheduled for ' + date);
     }
 
     function sendWhatsAppConfirmation(id) {
