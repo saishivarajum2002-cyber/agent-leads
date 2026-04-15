@@ -36,6 +36,63 @@
       --glow-o: 0 0 30px rgba(224, 120, 48, .1);
     }
 
+    /* LOADING SCREEN */
+    .pe-loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(7, 8, 12, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s ease, visibility 0.5s;
+    }
+
+    .pe-loader-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .pe-loader-content {
+      text-align: center;
+    }
+
+    .pe-spinner {
+      width: 60px;
+      height: 60px;
+      border: 3px solid rgba(240, 192, 64, 0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      margin: 0 auto 24px;
+      animation: pe-spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+      box-shadow: 0 0 15px rgba(240, 192, 64, 0.2);
+    }
+
+    @keyframes pe-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .pe-loader-text {
+      font-family: var(--font-head);
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .pe-loader-subtext {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -2184,7 +2241,15 @@
   </style>
 </head>
 
-<body>
+<body onload="init()">
+  <!-- PRE-LOADER -->
+  <div id="dashboard-loader" class="pe-loader-overlay">
+    <div class="pe-loader-content">
+      <div class="pe-spinner"></div>
+      <div class="pe-loader-text">PropEdge<span>.</span></div>
+      <div id="loader-status" class="pe-loader-subtext">Initializing secure session...</div>
+    </div>
+  </div>
 
   <aside class="sidebar">
     <div class="logo">
@@ -3363,7 +3428,7 @@
       // Get
       get(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } },
       // Save
-      set(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); syncToDB(); return true; } catch (e) { return false; } },
+      set(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; } },
 
       // Generic CRUD
       getAll(key) { return this.get(key) || []; },
@@ -3418,6 +3483,7 @@
             { title: 'Deal Closed: Ali Hassan', description: 'Skyview 3BR closed at $920,000', type: 'deal', icon: '', is_read: true },
           ].forEach(n => this.insert(this.NOTIFICATIONS, n));
         }
+        syncToDB(); // Sync the seeded data once at the end
       }
     };
 
@@ -3436,22 +3502,59 @@
     // INIT
     // ================================================================
     async function init() {
-      await syncFromDB();
-      DB.ensureAgent();
-      state.agent = DB.get(DB.AGENT) || {};
-      state.leads = DB.getAll(DB.LEADS);
-      state.properties = DB.getAll(DB.PROPERTIES);
-      state.bookings = DB.getAll(DB.BOOKINGS);
-      state.notifications = DB.getAll(DB.NOTIFICATIONS);
-
-      // Real Integration Status
-      const intRes = await fetch('/api/integration-status?email=' + state.agent.email).then(r => r.json()).catch(() => ({}));
-      state.integrations = {
-        google: { connected: !!intRes.google }
+      const loader = document.getElementById('dashboard-loader');
+      const statusEl = document.getElementById('loader-status');
+      
+      const hideLoader = () => {
+        if (loader && !loader.classList.contains('hidden')) {
+          loader.classList.add('hidden');
+          setTimeout(() => { if (loader.parentNode) loader.remove(); }, 600);
+        }
       };
 
-      state.options = DB.get('pe_opts') || { email: true, sms: true, whatsapp: true, auto: true };
-      renderAll();
+      // FAIL-SAFE: Hide loader after 3 seconds no matter what
+      setTimeout(hideLoader, 3000);
+
+      try {
+        // 1. Seed & Load Local State Immediately
+        DB.ensureAgent();
+        state.agent = DB.get(DB.AGENT) || {};
+        state.leads = DB.getAll(DB.LEADS);
+        state.properties = DB.getAll(DB.PROPERTIES);
+        state.bookings = DB.getAll(DB.BOOKINGS);
+        state.notifications = DB.getAll(DB.NOTIFICATIONS);
+        state.options = DB.get('pe_opts') || { email: true, sms: true, whatsapp: true, auto: true };
+
+        // 2. Initial Render (Instant)
+        renderAll();
+        
+        // 3. Background Sync (Does not block the UI)
+        if (statusEl) statusEl.textContent = 'Updating...';
+        
+        syncFromDB().then(() => {
+          // Re-load state if sync changed something
+          state.agent = DB.get(DB.AGENT) || {};
+          state.leads = DB.getAll(DB.LEADS);
+          state.properties = DB.getAll(DB.PROPERTIES);
+          state.bookings = DB.getAll(DB.BOOKINGS);
+          state.notifications = DB.getAll(DB.NOTIFICATIONS);
+          renderAll();
+        }).finally(() => {
+          hideLoader();
+        });
+
+        // 4. Real Integration Status
+        fetch('/api/integration-status?email=' + state.agent.email)
+          .then(r => r.json())
+          .then(intRes => {
+            state.integrations = { google: { connected: !!intRes.google } };
+            renderIntegrations();
+          }).catch(() => {});
+
+      } catch (err) {
+        console.error('PropEdge Init Error:', err);
+        hideLoader();
+      }
 
       // OAuth Listener
       window.addEventListener('message', async (e) => {

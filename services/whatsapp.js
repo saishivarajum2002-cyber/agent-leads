@@ -116,16 +116,16 @@ async function sendBookingCreatedMsg(clientPhone, visit) {
 
 Hi ${visit.client_name},
 
-✅ Your visit request has been *received*!
+✅ Your property visit is *CONFIRMED*!
 
 📌 *Property:* ${visit.property_name}
 📅 *Date:* ${visit.visit_date}
 🕒 *Time:* ${visit.visit_time}
-⏳ *Status:* Pending Confirmation
+✅ *Status:* Confirmed
 
 📍 *Location:* ${mapsLink}
 
-We will confirm your visit shortly. For urgent queries contact your agent directly.
+We look forward to seeing you. If you need to reschedule, please contact your agent directly.
 
 _PropEdge — Smart Real Estate Platform_`;
   return sendWhatsAppText(clientPhone, msg);

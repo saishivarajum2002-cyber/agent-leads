@@ -161,8 +161,16 @@ app.post('/api/qualify', async (req, res) => {
       const agentEmail = 'saishivaraju.m2002@gmail.com';
       let snapshot = await DataSnapshot.findOne({ email: agentEmail });
       if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: {} });
-      if (!snapshot.data.pe_qualifications) snapshot.data.pe_qualifications = [];
-      snapshot.data.pe_qualifications.unshift({ ...qualification, id: sessionToken, created_at: new Date().toISOString() });
+      if (!snapshot.data) snapshot.data = {};
+      
+      let quals = snapshot.data.pe_qualifications || [];
+      const wasString = typeof quals === 'string';
+      if (wasString) {
+        try { quals = JSON.parse(quals); } catch(e) { quals = []; }
+      }
+      
+      quals.unshift({ ...qualification, id: sessionToken, created_at: new Date().toISOString() });
+      snapshot.data.pe_qualifications = wasString ? JSON.stringify(quals) : quals;
       snapshot.markModified('data');
       await snapshot.save();
     } catch (e) { console.error('MongoDB Qualification Save Error:', e.message); }
@@ -463,14 +471,21 @@ app.post('/api/visits', async (req, res) => {
     try {
       let snapshot = await DataSnapshot.findOne({ email: agentEmail });
       if (snapshot) {
-        if (!snapshot.data.pe_notifications) snapshot.data.pe_notifications = [];
-        snapshot.data.pe_notifications.unshift({
+        let notifs = snapshot.data.pe_notifications || [];
+        const wasString = typeof notifs === 'string';
+        if (wasString) {
+          try { notifs = JSON.parse(notifs); } catch(e) { notifs = []; }
+        }
+        
+        notifs.unshift({
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-          title: 'Tour Request: ' + visit.client_name,
-          description: `Wants to visit ${visit.property_name} · ${visit.visit_date} ${visit.visit_time}`,
-          type: 'booking', bookingId: realId, icon: '📅', is_read: false,
+          title: 'Tour Confirmed: ' + visit.client_name,
+          description: `${visit.property_name} · ${visit.visit_date} ${visit.visit_time}`,
+          type: 'booking', bookingId: realId, icon: '✅', is_read: false,
           created_at: new Date().toISOString()
         });
+        
+        snapshot.data.pe_notifications = wasString ? JSON.stringify(notifs) : notifs;
         snapshot.markModified('data');
         await snapshot.save();
       }
@@ -535,14 +550,21 @@ app.patch('/api/visits/:id', async (req, res) => {
           try {
             let snapshot = await DataSnapshot.findOne({ email: agentEmail });
             if (snapshot) {
-              if (!snapshot.data.pe_notifications) snapshot.data.pe_notifications = [];
-              snapshot.data.pe_notifications.unshift({
+              let notifs = snapshot.data.pe_notifications || [];
+              const wasString = typeof notifs === 'string';
+              if (wasString) {
+                try { notifs = JSON.parse(notifs); } catch(e) { notifs = []; }
+              }
+              
+              notifs.unshift({
                 id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
                 title: `Visit ${isConfirmed ? 'Confirmed' : 'Rejected'}: ${v.client_name}`,
                 description: `${v.property_name} · ${v.visit_date} ${v.visit_time}`,
                 type: 'booking', icon: isConfirmed ? '✅' : '❌', is_read: false,
                 created_at: new Date().toISOString()
               });
+              
+              snapshot.data.pe_notifications = wasString ? JSON.stringify(notifs) : notifs;
               snapshot.markModified('data');
               await snapshot.save();
             }
@@ -696,12 +718,20 @@ app.post('/api/leads', async (req, res) => {
     let mongodbSaved = false;
     try {
       let snapshot = await DataSnapshot.findOne({ email: agentEmail });
-      if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: { pe_leads: [] } });
+      if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: {} });
       if (!snapshot.data) snapshot.data = {};
-      if (!snapshot.data.pe_leads) snapshot.data.pe_leads = [];
+      
+      let leads = snapshot.data.pe_leads || [];
+      const wasString = typeof leads === 'string';
+      if (wasString) {
+        try { leads = JSON.parse(leads); } catch(e) { leads = []; }
+      }
+      
       lead.created_at = lead.created_at || new Date().toISOString();
       lead.id = lead.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
-      snapshot.data.pe_leads.unshift(lead);
+      leads.unshift(lead);
+      
+      snapshot.data.pe_leads = wasString ? JSON.stringify(leads) : leads;
       snapshot.markModified('data');
       await snapshot.save();
       mongodbSaved = true;
