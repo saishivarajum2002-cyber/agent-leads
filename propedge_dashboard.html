@@ -2205,7 +2205,8 @@
           class="nav-badge" id="badge-props">0</span></div>
       <div class="nav-item" onclick="showPanel('map',this)"><span class="icon"></span>Map View</div>
       <div class="nav-sec">Client Tools</div>
-      <div class="nav-item" onclick="showPanel('bookings',this)"><span class="icon"></span>Appointments</div>
+      <div class="nav-item" onclick="showPanel('bookings',this)"><span class="icon"></span>Appointments<span
+          class="nav-badge green" id="badge-bookings">0</span></div>
       <div class="nav-item" onclick="showPanel('marketing',this)"><span class="icon"></span>Marketing</div>
       <div class="nav-item" onclick="showPanel('ai',this)"><span class="icon"></span>AI Tools</div>
       <div class="nav-item" onclick="showPanel('documents',this)" id="nav-docs"><span class="icon"></span>Documents Vault<span class="nav-badge" id="badge-docs" style="background:var(--purple);color:#fff">0</span></div>
@@ -3550,12 +3551,13 @@
     function renderBadges() {
       const newLeads = state.leads.filter(l => l.status === 'New').length;
       const unread = state.notifications.filter(n => !n.is_read).length;
-      const pending = state.bookings.filter(b => (b.status || '').toLowerCase() === 'pending').length;
-      document.getElementById('badge-leads').textContent = newLeads;
-      document.getElementById('badge-props').textContent = state.properties.length;
-      document.getElementById('badge-bookings').textContent = pending;
-      document.getElementById('badge-notifs').textContent = unread;
-      document.getElementById('notif-dot').style.display = unread > 0 ? 'block' : 'none';
+      const confirmed = state.bookings.filter(b => (b.status || '').toLowerCase() === 'confirmed').length;
+      
+      const badgeLeads = document.getElementById('badge-leads'); if (badgeLeads) badgeLeads.textContent = newLeads;
+      const badgeProps = document.getElementById('badge-props'); if (badgeProps) badgeProps.textContent = state.properties.length;
+      const badgeBooks = document.getElementById('badge-bookings'); if (badgeBooks) badgeBooks.textContent = confirmed;
+      const badgeNotifs = document.getElementById('badge-notifs'); if (badgeNotifs) badgeNotifs.textContent = unread;
+      const notifDot = document.getElementById('notif-dot'); if (notifDot) notifDot.style.display = unread > 0 ? 'block' : 'none';
     }
 
     // ================================================================
@@ -3585,7 +3587,7 @@
       // Flow strip
       document.getElementById('flow-new').textContent = newCount;
       document.getElementById('flow-pipe').textContent = contacted;
-      document.getElementById('flow-book').textContent = state.bookings.filter(b => b.status !== 'Rejected').length;
+      document.getElementById('flow-book').textContent = state.bookings.filter(b => b.status === 'confirmed').length;
       document.getElementById('flow-closed').textContent = closed.length;
 
       // Bar chart (Leads History - last 7 days)
@@ -3618,40 +3620,17 @@
           <div style="font-size:11px;color:var(--muted)">${b.property_name || '—'}</div>
         </div>
         <div class="visit-actions">
-          ${b.status.toLowerCase() === 'pending' ? `<button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">Confirm</button><button class="btn btn-ghost btn-sm" onclick="updateBookingStatus('${b.id}','rejected')">Reject</button>` : ''}
-          ${b.status.toLowerCase() === 'confirmed' ? `<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsAppConfirmation('${b.id}')">💬 WhatsApp Chat</button><button class="btn btn-primary btn-sm" onclick="markVisitOutcome('${b.id}')">Outcome</button>` : ''}
+          <button class="btn btn-whatsapp btn-sm" onclick="sendWhatsAppConfirmation('${b.id}')">💬 WhatsApp Chat</button><button class="btn btn-primary btn-sm" onclick="markVisitOutcome('${b.id}')">Outcome</button>
           <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')" title="Delete Visit">🗑️</button>
         </div>
       </div>`;
         }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:14px">No visits today</div>';
       }
 
-      // Pending Approvals (All dates)
-      const pendingVisits = state.bookings.filter(b => b.status.toLowerCase() === 'pending');
+      // Pending Approvals List REMOVED
       const dPendingWrap = document.getElementById('d-pending-approvals-wrap');
-      const dPendingList = document.getElementById('d-pending-approvals-list');
-      if (dPendingWrap && dPendingList) {
-        if (pendingVisits.length > 0) {
-          dPendingWrap.style.display = 'block';
-          document.getElementById('d-pending-count').textContent = `${pendingVisits.length} Pending Approval${pendingVisits.length > 1 ? 's' : ''}`;
-          dPendingList.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:10px">
-            ${pendingVisits.map(b => `
-              <div class="visit-item" style="border-left:4px solid var(--accent)">
-                <div style="flex:1">
-                  <div style="font-weight:600;font-size:13px">${b.client_name}</div>
-                  <div style="font-size:11px;color:var(--muted)">${b.property_name} · 📅 ${b.visit_date} · 🕒 ${b.visit_time}</div>
-                </div>
-                <div class="visit-actions">
-                  <button class="btn btn-success btn-sm" onclick="updateBookingStatus('${b.id}','confirmed')">Accept Request</button>
-                  <button class="btn btn-ghost btn-sm" onclick="updateBookingStatus('${b.id}','rejected')">Reject</button>
-                </div>
-              </div>
-            `).join('')}
-          </div>`;
-        } else {
-          dPendingWrap.style.display = 'none';
-        }
-      }
+      if (dPendingWrap) dPendingWrap.style.display = 'none';
+    }
 
       // Top property
       const topP = [...state.properties].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
