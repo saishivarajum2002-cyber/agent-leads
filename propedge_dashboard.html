@@ -75,7 +75,9 @@
     }
 
     @keyframes pe-spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .pe-loader-text {
@@ -2266,7 +2268,8 @@
           class="nav-badge green" id="badge-bookings">0</span></div>
       <div class="nav-item" onclick="showPanel('marketing',this)"><span class="icon"></span>Marketing</div>
       <div class="nav-item" onclick="showPanel('ai',this)"><span class="icon"></span>AI Tools</div>
-      <div class="nav-item" onclick="showPanel('documents',this)" id="nav-docs"><span class="icon"></span>Documents Vault<span class="nav-badge" id="badge-docs" style="background:var(--purple);color:#fff">0</span></div>
+      <div class="nav-item" onclick="showPanel('documents',this)" id="nav-docs"><span class="icon"></span>Documents
+        Vault<span class="nav-badge" id="badge-docs" style="background:var(--purple);color:#fff">0</span></div>
       <div class="nav-sec">Agency</div>
       <div class="nav-item" onclick="showPanel('analytics',this)"><span class="icon"></span>Analytics</div>
       <div class="nav-item" onclick="showPanel('team',this)"><span class="icon"></span>Team</div>
@@ -2797,7 +2800,8 @@
       <div class="panel" id="panel-ai">
         <div class="sec-head">
           <div class="sec-title">AI Tools</div><span
-            style="background:rgba(240,192,64,.15);color:var(--accent);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">PropEdge Smart AI</span>
+            style="background:rgba(240,192,64,.15);color:var(--accent);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">PropEdge
+            Smart AI</span>
         </div>
         <div class="dash-grid">
           <div class="card">
@@ -2881,10 +2885,13 @@
         <div class="sec-head">
           <div class="sec-title">Notifications</div>
           <div style="display:flex;gap:8px;align-items:center">
-            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-right:8px">
-              <input type="checkbox" id="check-all-notifs" onclick="toggleSelectAllNotifications(this.checked)"> Select All
+            <label
+              style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-right:8px">
+              <input type="checkbox" id="check-all-notifs" onclick="toggleSelectAllNotifications(this.checked)"> Select
+              All
             </label>
-            <button class="btn btn-danger btn-sm" id="btn-del-selected" onclick="deleteSelectedNotifications()" style="display:none">Delete Selected</button>
+            <button class="btn btn-danger btn-sm" id="btn-del-selected" onclick="deleteSelectedNotifications()"
+              style="display:none">Delete Selected</button>
             <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
           </div>
         </div>
@@ -2973,9 +2980,12 @@
             </div>
             <div
               style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:20px;flex-wrap:wrap">
-              <label class="check-wrap"><input type="checkbox" id="opt-email" checked onchange="saveOptions()"> 📧 Email Alerts</label>
-              <label class="check-wrap"><input type="checkbox" id="opt-sms" checked onchange="saveOptions()"> 📱 SMS Notifications</label>
-              <label class="check-wrap"><input type="checkbox" id="opt-whatsapp" checked onchange="saveOptions()"> 💬 WhatsApp Pre-fill</label>
+              <label class="check-wrap"><input type="checkbox" id="opt-email" checked onchange="saveOptions()"> 📧 Email
+                Alerts</label>
+              <label class="check-wrap"><input type="checkbox" id="opt-sms" checked onchange="saveOptions()"> 📱 SMS
+                Notifications</label>
+              <label class="check-wrap"><input type="checkbox" id="opt-whatsapp" checked onchange="saveOptions()"> 💬
+                WhatsApp Pre-fill</label>
             </div>
           </div>
         </div>
@@ -2983,86 +2993,89 @@
 
     </div>
 
-      <!-- ══════════════════════════════════════════════════
+    <!-- ══════════════════════════════════════════════════
            DOCUMENTS VAULT PANEL
       ══════════════════════════════════════════════════ -->
-      <div class="panel" id="panel-documents">
-        <div class="sec-head">
-          <div class="sec-title">🗂️ Documents Vault</div>
-          <div style="display:flex;gap:10px;align-items:center">
-            <div id="docs-status" style="font-size:12px;color:var(--muted)">Loading…</div>
-            <button class="btn btn-primary" onclick="loadDocuments()">↻ Refresh</button>
-          </div>
+    <div class="panel" id="panel-documents">
+      <div class="sec-head">
+        <div class="sec-title">🗂️ Documents Vault</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div id="docs-status" style="font-size:12px;color:var(--muted)">Loading…</div>
+          <button class="btn btn-primary" onclick="loadDocuments()">↻ Refresh</button>
         </div>
-        <!-- Filter chips -->
-        <div class="filter-row" id="docs-filter-row">
-          <div class="f-chip active" onclick="filterDocs('all',this)">All Documents</div>
-          <div class="f-chip" onclick="filterDocs('agreement',this)">📝 Agreements</div>
-          <div class="f-chip" onclick="filterDocs('id_proof',this)">🪪 ID Proofs</div>
-          <div class="f-chip" onclick="filterDocs('booking_form',this)">📅 Bookings</div>
-          <div class="f-chip" onclick="filterDocs('other',this)">📄 Other</div>
-        </div>
+      </div>
+      <!-- Filter chips -->
+      <div class="filter-row" id="docs-filter-row">
+        <div class="f-chip active" onclick="filterDocs('all',this)">All Documents</div>
+        <div class="f-chip" onclick="filterDocs('agreement',this)">📝 Agreements</div>
+        <div class="f-chip" onclick="filterDocs('id_proof',this)">🪪 ID Proofs</div>
+        <div class="f-chip" onclick="filterDocs('booking_form',this)">📅 Bookings</div>
+        <div class="f-chip" onclick="filterDocs('other',this)">📄 Other</div>
+      </div>
 
-        <!-- Upload Section -->
-        <div class="card" style="margin-bottom:18px">
-          <div class="card-header">
-            <div class="card-title">Upload Document</div>
-            <span class="badge badge-confirmed" style="font-size:10px">Agent Upload</span>
-          </div>
-          <div class="card-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
-              <div>
-                <label class="form-label">Document Type</label>
-                <select class="form-input" id="doc-type-sel">
-                  <option value="agreement">📝 Buyer Agreement</option>
-                  <option value="id_proof">🪪 ID Proof</option>
-                  <option value="booking_form">📅 Booking Form</option>
-                  <option value="other">📄 Other</option>
-                </select>
-              </div>
-              <div>
-                <label class="form-label">Lead ID / Booking ID (optional)</label>
-                <input class="form-input" id="doc-lead-id" placeholder="Link to lead ID">
-              </div>
-              <div>
-                <label class="form-label">Notes</label>
-                <input class="form-input" id="doc-notes" placeholder="Optional notes">
-              </div>
+      <!-- Upload Section -->
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-header">
+          <div class="card-title">Upload Document</div>
+          <span class="badge badge-confirmed" style="font-size:10px">Agent Upload</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label class="form-label">Document Type</label>
+              <select class="form-input" id="doc-type-sel">
+                <option value="agreement">📝 Buyer Agreement</option>
+                <option value="id_proof">🪪 ID Proof</option>
+                <option value="booking_form">📅 Booking Form</option>
+                <option value="other">📄 Other</option>
+              </select>
             </div>
-            <label class="form-label">Select File (PDF, JPG, PNG — max 5MB)</label>
-            <input type="file" id="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.txt" style="margin-bottom:10px;color:var(--text);font-size:13px" onchange="previewDocFile(this)">
-            <div id="doc-file-preview" style="display:none;font-size:12px;color:var(--green);margin-bottom:8px"></div>
-            <button class="btn btn-primary" id="doc-upload-btn" onclick="uploadDocument()">⬆️ Upload Document</button>
-          </div>
-        </div>
-
-        <!-- Signed Agreements Section -->
-        <div class="card" style="margin-bottom:18px" id="agreements-card">
-          <div class="card-header">
-            <div class="card-title">✅ Signed Buyer Agreements</div>
-            <button class="btn btn-ghost btn-sm" onclick="loadAgreements()">Refresh</button>
-          </div>
-          <div class="card-body">
-            <div id="agreements-list"><div class="table-empty">Loading agreements…</div></div>
-          </div>
-        </div>
-
-        <!-- All Documents Grid -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">📁 All Stored Documents</div>
-            <span id="docs-count" style="font-size:12px;color:var(--muted)">0 documents</span>
-          </div>
-          <div class="card-body">
-            <div id="docs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
-              <div class="table-empty">Loading documents…</div>
+            <div>
+              <label class="form-label">Lead ID / Booking ID (optional)</label>
+              <input class="form-input" id="doc-lead-id" placeholder="Link to lead ID">
             </div>
+            <div>
+              <label class="form-label">Notes</label>
+              <input class="form-input" id="doc-notes" placeholder="Optional notes">
+            </div>
+          </div>
+          <label class="form-label">Select File (PDF, JPG, PNG — max 5MB)</label>
+          <input type="file" id="doc-file-input" accept=".pdf,.jpg,.jpeg,.png,.txt"
+            style="margin-bottom:10px;color:var(--text);font-size:13px" onchange="previewDocFile(this)">
+          <div id="doc-file-preview" style="display:none;font-size:12px;color:var(--green);margin-bottom:8px"></div>
+          <button class="btn btn-primary" id="doc-upload-btn" onclick="uploadDocument()">⬆️ Upload Document</button>
+        </div>
+      </div>
+
+      <!-- Signed Agreements Section -->
+      <div class="card" style="margin-bottom:18px" id="agreements-card">
+        <div class="card-header">
+          <div class="card-title">✅ Signed Buyer Agreements</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadAgreements()">Refresh</button>
+        </div>
+        <div class="card-body">
+          <div id="agreements-list">
+            <div class="table-empty">Loading agreements…</div>
           </div>
         </div>
       </div>
 
+      <!-- All Documents Grid -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📁 All Stored Documents</div>
+          <span id="docs-count" style="font-size:12px;color:var(--muted)">0 documents</span>
+        </div>
+        <div class="card-body">
+          <div id="docs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+            <div class="table-empty">Loading documents…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
-</div>
+  </div>
 
   <!-- MODALS -->
   <div class="modal-overlay" id="modal-addLead">
@@ -3118,7 +3131,8 @@
         <div class="img-preview-grid" id="img-preview-grid"></div>
         <div class="progress-wrap" id="img-progress">
           <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">
-            <span id="prog-text">Processing…</span><span id="prog-count">0/0</span></div>
+            <span id="prog-text">Processing…</span><span id="prog-count">0/0</span>
+          </div>
           <div class="progress-bar-bg">
             <div class="progress-bar" id="prog-bar"></div>
           </div>
@@ -3496,7 +3510,7 @@
     async function init() {
       try {
         console.log('🚀 Dashboard initializing...');
-        
+
         // 1. Seed & Load Local State
         DB.ensureAgent();
         state.agent = DB.get(DB.AGENT) || {};
@@ -3508,7 +3522,7 @@
 
         // 2. Initial Render
         renderAll();
-        
+
         // 3. Background Sync (Non-blocking)
         syncFromDB().then(() => {
           console.log('✅ Background sync complete.');
@@ -3527,7 +3541,7 @@
           .then(intRes => {
             state.integrations = { google: { connected: !!intRes.google } };
             renderIntegrations();
-          }).catch(() => {});
+          }).catch(() => { });
 
       } catch (err) {
         console.error('Critical Dashboard Init Error:', err);
@@ -3537,27 +3551,27 @@
     // Ensure initialization fires
     window.addEventListener('DOMContentLoaded', init);
 
-      // OAuth Listener
-      window.addEventListener('message', async (e) => {
-        if (e.data === 'google_connected') {
-          toast('Google Calendar Connected Successfully!');
-          const updatedStatus = await fetch('/api/integration-status?email=' + state.agent.email).then(r => r.json());
-          state.integrations = {
-            google: { connected: !!updatedStatus.google }
-          };
-          renderIntegrations();
-        }
-      });
-
-      // Real-time synchronization polling (every 30 seconds)
-      setInterval(syncFromDB, 30000);
-
-      // Trigger Onboarding if new agent
-      const agent = DB.get(DB.AGENT);
-      if (!agent || agent.onboarded !== true) {
-        setTimeout(() => openModal('onboarding'), 1000);
+    // OAuth Listener
+    window.addEventListener('message', async (e) => {
+      if (e.data === 'google_connected') {
+        toast('Google Calendar Connected Successfully!');
+        const updatedStatus = await fetch('/api/integration-status?email=' + state.agent.email).then(r => r.json());
+        state.integrations = {
+          google: { connected: !!updatedStatus.google }
+        };
+        renderIntegrations();
       }
+    });
+
+    // Real-time synchronization polling (every 30 seconds)
+    setInterval(syncFromDB, 30000);
+
+    // Trigger Onboarding if new agent
+    const agent = DB.get(DB.AGENT);
+    if (!agent || agent.onboarded !== true) {
+      setTimeout(() => openModal('onboarding'), 1000);
     }
+
 
     function nextOnboard(step) {
       document.querySelectorAll('.onboard-panel').forEach(p => p.classList.remove('active'));
@@ -3603,7 +3617,6 @@
     function renderAll() {
       renderAgent();
       renderBadges();
-      renderDashboard();
       renderLeads();
       renderPipeline();
       renderProperties();
@@ -3636,7 +3649,7 @@
       const newLeads = state.leads.filter(l => l.status === 'New').length;
       const unread = state.notifications.filter(n => !n.is_read).length;
       const confirmed = state.bookings.filter(b => (b.status || '').toLowerCase() === 'confirmed').length;
-      
+
       const badgeLeads = document.getElementById('badge-leads'); if (badgeLeads) badgeLeads.textContent = newLeads;
       const badgeProps = document.getElementById('badge-props'); if (badgeProps) badgeProps.textContent = state.properties.length;
       const badgeBooks = document.getElementById('badge-bookings'); if (badgeBooks) badgeBooks.textContent = confirmed;
@@ -4095,7 +4108,7 @@
       // 1. Local Save
       const saved = DB.insert(DB.BOOKINGS, visit);
       DB.insert(DB.NOTIFICATIONS, { title: 'New Property Visit: ' + name, description: `Visit on ${date} at ${time}`, type: 'booking', icon: '📅', is_read: false });
-      
+
       // 2. API Save
       try {
         await fetch('/api/visits', {
@@ -4115,7 +4128,7 @@
       DB.update(DB.BOOKINGS, id, { status });
       state.bookings = DB.getAll(DB.BOOKINGS);
       renderAll();
-      
+
       // Sync to API
       try {
         const res = await fetch('/api/visits/' + id, {
@@ -4129,20 +4142,20 @@
           // Refresh state from DB to ensure local sync
           syncFromDB().then(() => renderAll());
         }
-      } catch (e) { 
+      } catch (e) {
         toast('Failed to sync status update', true);
-        console.warn('API Visit Status Error:', e); 
+        console.warn('API Visit Status Error:', e);
       }
     }
 
     async function deleteBooking(id) {
       if (!confirm('Are you sure you want to permanently delete this visit record?')) return;
-      
+
       // Local removal
       DB.delete(DB.BOOKINGS, id);
       state.bookings = DB.getAll(DB.BOOKINGS);
       renderAll();
-      
+
       // Sync to API
       try {
         const res = await fetch(`/api/visits/${id}?agentEmail=${encodeURIComponent(state.agent.email)}`, {
@@ -4162,18 +4175,18 @@
     function markVisitOutcome(id) {
       const outcome = prompt("Enter visit outcome (Interested, Not Interested, Negotiation):", "Interested");
       if (!outcome) return;
-      
+
       DB.update(DB.BOOKINGS, id, { outcome, status: 'completed' });
       state.bookings = DB.getAll(DB.BOOKINGS);
       renderAll();
-      
+
       // Sync to API
       fetch('/api/visits/' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agentEmail: state.agent.email, updates: { outcome, status: 'completed' } })
       }).catch(e => { });
-      
+
       toast(`Outcome saved: ${outcome}`);
     }
 
@@ -4218,14 +4231,14 @@
     function sendWhatsAppConfirmation(id) {
       const b = state.bookings.find(x => x.id === id);
       if (!b || !b.client_phone) { toast('No client phone found.', true); return; }
-      
+
       const agent = state.agent || {};
       const agentName = agent.name || 'Sai Shiva';
       const agentPhone = agent.phone || '+971 50 123 4567';
       const mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.property_name + ' Dubai')}`;
-      
+
       const msg = `Your visit is conformed and here is the property location link: ${mapLink} and while comming contact here is my contact detailes: ${agentName} (${agentPhone})`;
-      
+
       const waLink = `https://wa.me/${b.client_phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
       window.open(waLink, '_blank');
     }
@@ -4548,10 +4561,10 @@ ${date}`;
       btn.disabled = true; btn.textContent = '⏳ Generating…';
       document.getElementById('ai-output').textContent = 'Writing your description…';
       try {
-        const res = await fetch('/api/ai/description', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ details }) 
+        const res = await fetch('/api/ai/description', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ details })
         });
         const data = await res.json();
         if (data.text) {
@@ -4900,14 +4913,14 @@ ${date}`;
         const date = doc.created_at ? new Date(doc.created_at).toLocaleDateString() : '—';
         const size = doc.file_size_kb ? doc.file_size_kb + ' KB' : '—';
         const colorMap = { agreement: 'rgba(240,192,64,.15)', id_proof: 'rgba(64,144,240,.1)', booking_form: 'rgba(46,204,138,.1)', other: 'rgba(255,255,255,.04)' };
-        return `<div style="background:${colorMap[doc.doc_type]||'rgba(255,255,255,.04)'};border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;position:relative">
+        return `<div style="background:${colorMap[doc.doc_type] || 'rgba(255,255,255,.04)'};border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;position:relative">
           <div style="font-size:28px">${icon}</div>
           <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${doc.file_name}">${doc.file_name}</div>
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">${doc.doc_type?.replace(/_/g,' ')}</div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">${doc.doc_type?.replace(/_/g, ' ')}</div>
           <div style="font-size:11px;color:var(--muted)">${date} · ${size}</div>
           ${doc.notes ? `<div style="font-size:11px;color:var(--muted);font-style:italic">${doc.notes}</div>` : ''}
-          ${doc.lead_id ? `<div style="font-size:11px;color:var(--accent)">Lead: ${doc.lead_id.slice(0,12)}...</div>` : ''}
-          ${doc.file_data ? `<button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="downloadDoc('${doc.file_name}','${doc.file_mime||'application/octet-stream'}','${doc.id}')">⬇️ Download</button>` : '<div style="font-size:10px;color:var(--muted)">No file data (metadata only)</div>'}
+          ${doc.lead_id ? `<div style="font-size:11px;color:var(--accent)">Lead: ${doc.lead_id.slice(0, 12)}...</div>` : ''}
+          ${doc.file_data ? `<button class="btn btn-ghost btn-sm" style="margin-top:4px" onclick="downloadDoc('${doc.file_name}','${doc.file_mime || 'application/octet-stream'}','${doc.id}')">⬇️ Download</button>` : '<div style="font-size:10px;color:var(--muted)">No file data (metadata only)</div>'}
         </div>`;
       }).join('');
     }
