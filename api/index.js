@@ -407,9 +407,9 @@ app.post('/api/visits', async (req, res) => {
     let mongodbSaved = false;
     try {
       let snapshot = await DataSnapshot.findOne({ email: agentEmail });
-      if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: { pe_visits: [] } });
-      if (!snapshot.data.pe_visits) snapshot.data.pe_visits = [];
-      snapshot.data.pe_visits.unshift({ ...visit, id: realId, created_at: new Date().toISOString() });
+      if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: { pe_bookings: [] } });
+      if (!snapshot.data.pe_bookings) snapshot.data.pe_bookings = [];
+      snapshot.data.pe_bookings.unshift({ ...visit, id: realId, created_at: new Date().toISOString() });
       snapshot.markModified('data');
       await snapshot.save();
       mongodbSaved = true;
@@ -483,10 +483,10 @@ app.patch('/api/visits/:id', async (req, res) => {
 
     if (agentEmail) {
       const snapshot = await DataSnapshot.findOne({ email: agentEmail });
-      if (snapshot && snapshot.data.pe_visits) {
-        const idx = snapshot.data.pe_visits.findIndex(v => v.id === id);
+      if (snapshot && snapshot.data.pe_bookings) {
+        const idx = snapshot.data.pe_bookings.findIndex(v => v.id === id);
         if (idx !== -1) {
-          snapshot.data.pe_visits[idx] = { ...snapshot.data.pe_visits[idx], ...updates };
+          snapshot.data.pe_bookings[idx] = { ...snapshot.data.pe_bookings[idx], ...updates };
           snapshot.markModified('data');
           await snapshot.save();
         }
@@ -545,6 +545,65 @@ app.patch('/api/visits/:id', async (req, res) => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
+// AUTOMATED REMINDERS — GET /api/cron/reminders
+// ──────────────────────────────────────────────────────────────────────────────
+app.get('/api/cron/reminders', async (req, res) => {
+  try {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+    
+    console.log(`⏰ Running Reminders Cron for: ${dateStr}`);
+    
+    const visits = await getVisitsByDate(dateStr);
+    if (!visits.success || !visits.data.length) {
+      return res.json({ success: true, message: 'No visits scheduled for tomorrow.' });
+    }
+
+    let sentCount = 0;
+    for (const v of visits.data) {
+      if (v.status === 'confirmed' && v.client_email) {
+        const reminderHtml = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;border-radius:8px;overflow:hidden">
+            <div style="background:#1a1a18;padding:24px;text-align:center"><h2 style="color:#d4b483;margin:0">⏰ Visit Reminder: Tomorrow</h2></div>
+            <div style="background:#fff;padding:24px">
+              <p style="color:#333;margin-top:0">Hi ${v.client_name},</p>
+              <p style="color:#555">This is a reminder for your property visit scheduled for <strong>tomorrow</strong>.</p>
+              <div style="background:#fffbf0;border:1px solid #d4b483;border-radius:6px;padding:16px;margin:16px 0">
+                <p style="margin:4px 0;color:#555"><strong>Property:</strong> ${v.property_name}</p>
+                <p style="margin:4px 0;color:#555"><strong>Date:</strong> ${v.visit_date}</p>
+                <p style="margin:4px 0;color:#555"><strong>Time:</strong> ${v.visit_time}</p>
+                <p style="margin:4px 0;color:#2ecc8a"><strong>Status:</strong> Confirmed</p>
+              </div>
+              <p style="color:#333;font-weight:bold">Contact Details:</p>
+              <p style="color:#555;margin:4px 0">👤 Agent: Sai Shiva</p>
+              <p style="color:#555;margin:4px 0">📞 +971 50 123 4567</p>
+              <p style="color:#555;margin:4px 0">📧 saishivaraju.m2002@gmail.com</p>
+              <div style="text-align:center;margin-top:20px">
+                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(v.property_name + ' Dubai')}" style="background:#b8965a;color:#fff;padding:12px 28px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block">View Location on Maps →</a>
+              </div>
+            </div>
+            <div style="background:#1a1a18;padding:14px;text-align:center"><p style="color:#888;font-size:12px;margin:0">PropEdge Real Estate</p></div>
+          </div>`;
+        
+        await sendEmail({
+          to: v.client_email,
+          subject: `⏰ Reminder: Your visit to ${v.property_name} is tomorrow`,
+          html: reminderHtml,
+          message: `Reminder: Your visit to ${v.property_name} is tomorrow at ${v.visit_time}. Location: Dubai.`
+        });
+        sentCount++;
+      }
+    }
+
+    res.json({ success: true, sentCount });
+  } catch (error) {
+    console.error('Cron Error:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
 // DELETE VISIT — DELETE /api/visits/:id
 // ──────────────────────────────────────────────────────────────────────────────
 app.delete('/api/visits/:id', async (req, res) => {
@@ -555,8 +614,8 @@ app.delete('/api/visits/:id', async (req, res) => {
     if (agentEmail) {
       await connectDB();
       const snapshot = await DataSnapshot.findOne({ email: agentEmail });
-      if (snapshot && snapshot.data.pe_visits) {
-        snapshot.data.pe_visits = snapshot.data.pe_visits.filter(v => v.id !== id);
+      if (snapshot && snapshot.data.pe_bookings) {
+        snapshot.data.pe_bookings = snapshot.data.pe_bookings.filter(v => v.id !== id);
         snapshot.markModified('data');
         await snapshot.save();
       }
