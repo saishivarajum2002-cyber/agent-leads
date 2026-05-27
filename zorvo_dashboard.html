@@ -5610,11 +5610,12 @@
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Phone</th>
+                  <th>Phone <i class="fas fa-phone" style="font-size:10px; color:var(--green); opacity:0.7;"></i></th>
+                  <th>Sentiment</th>
                   <th>Property Interest</th>
                   <th>Status</th>
+                  <th>Budget</th>
                   <th>Source</th>
-                  <th>Notes</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -7923,20 +7924,33 @@
               </div>
             </div>
           </td>
+          <td data-label="Phone" onclick="event.stopPropagation()">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:13px; font-weight:700; color:#fff; font-family:monospace; letter-spacing:0.5px">${l.phone || '—'}</span>
+              ${l.phone ? `
+              <a href="tel:${l.phone.replace(/\s/g,'').replace(/[^+\d]/g,'')}"
+                 onclick="event.stopPropagation(); manualCallLead('${l.id}')"
+                 title="Manual Call — you dial"
+                 style="display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:rgba(46,204,138,0.12); border:1px solid rgba(46,204,138,0.3); color:var(--green); text-decoration:none; transition:all 0.2s;"
+                 onmouseover="this.style.background='rgba(46,204,138,0.25)'; this.style.transform='scale(1.1)';"
+                 onmouseout="this.style.background='rgba(46,204,138,0.12)'; this.style.transform='scale(1)';"
+              ><i class="fas fa-phone" style="font-size:11px"></i></a>` : ''}
+            </div>
+          </td>
           <td data-label="Sentiment">${sentiment}</td>
           <td data-label="Interest" style="font-size:12px; font-weight:700">${l.property_interest || 'General'}</td>
           <td data-label="Status"><span class="badge ${bc[l.status] || ''}">${l.status}</span></td>
           <td data-label="Budget" class="${budgetClass}">$${fmtNum(l.budget || 550000)}</td>
           <td data-label="Source" style="font-size:11px; color:var(--muted)">${l.source || 'Website'}</td>
           <td data-label="Actions" onclick="event.stopPropagation()">
-            <div style="display:flex; gap:10px; align-items:center">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
               ${actionBtn}
               ${l.email ? `<button class="btn btn-ghost btn-sm" style="width:32px; height:32px; padding:0; color:var(--accent)" onclick="event.stopPropagation();sendLeadEmail('${l.id}','followup')" title="Send Email"><i class="fas fa-envelope"></i></button>` : ''}
               <button class="btn btn-danger btn-sm" style="width:32px; height:32px; padding:0" onclick="quickDeleteLead('${l.id}')"><i class="fas fa-trash-can"></i></button>
             </div>
           </td>
         </tr>`;
-      }).join('') || '<tr><td colspan="7" class="table-empty">No leads found</td></tr>';
+      }).join('') || '<tr><td colspan="8" class="table-empty">No leads found</td></tr>';
     }
 
 
@@ -12004,6 +12018,44 @@ ${date}`;
         console.error('Manual trigger error:', err);
         toast('Failed to trigger call. Server offline?', true);
       }
+    }
+
+    // ── MANUAL CALL (Agent dials lead directly) ──────────────────────────────
+    function manualCallLead(leadId) {
+      const lead = state.leads.find(l => l.id === leadId);
+      if (!lead || !lead.phone) return;
+
+      // Log the manual call attempt in CRM
+      const callLog = {
+        id: 'call_' + Date.now(),
+        lead_id: leadId,
+        lead_name: lead.name,
+        phone: lead.phone,
+        type: 'manual',
+        status: 'manual_dial',
+        outcome: 'Pending',
+        duration: null,
+        created_at: new Date().toISOString(),
+        notes: 'Agent-initiated manual call'
+      };
+
+      const calls = DB.getAll('pe_calls');
+      calls.unshift(callLog);
+      DB.set('pe_calls', calls);
+
+      // Update lead status to Contacted if it was New
+      const leads = DB.getAll(DB.LEADS);
+      const lIdx = leads.findIndex(l => l.id === leadId);
+      if (lIdx !== -1 && leads[lIdx].status === 'New') {
+        leads[lIdx].status = 'Contacted';
+        leads[lIdx].updated_at = new Date().toISOString();
+        DB.set(DB.LEADS, leads);
+        state.leads = leads;
+        renderLeads();
+      }
+
+      syncToDB();
+      showToast(`📞 Calling ${lead.name} at ${lead.phone}...`, 'success');
     }
 
     async function sendAgentAlert(title, msg) {
