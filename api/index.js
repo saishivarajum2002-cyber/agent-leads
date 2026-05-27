@@ -2198,6 +2198,476 @@ app.post('/api/send-email', protect, async (req, res) => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
+// LEAD IMPORT & AI OUTREACH CAMPAIGNS API
+// ──────────────────────────────────────────────────────────────────────────────
+
+app.post('/api/leads/import', protect, async (req, res) => {
+  let { agentEmail, leads, options } = req.body;
+  options = options || {};
+  if (!agentEmail) agentEmail = process.env.AGENT_EMAIL || 'saishivaraju.m2002@gmail.com';
+  if (!Array.isArray(leads)) return res.status(400).json({ error: 'Leads array required' });
+
+  console.log(`📥 Batch Lead Import requested for ${agentEmail}. Count: ${leads.length}`);
+
+  try {
+    const { normalizeSpokenPhone } = require('../services/extraction');
+    const errors = [];
+    const validLeads = [];
+    const duplicates = [];
+
+    await connectDB();
+    let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+    if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: {} });
+    if (!snapshot.data) snapshot.data = {};
+
+    let currentLeads = snapshot.data.pe_leads || [];
+    if (typeof currentLeads === 'string') {
+      try { currentLeads = JSON.parse(currentLeads); } catch (e) { currentLeads = []; }
+    }
+
+    const existingPhones = new Set(currentLeads.map(l => normalizeSpokenPhone(l.phone)));
+    const existingEmails = new Set(currentLeads.map(l => l.email?.toLowerCase()).filter(Boolean));
+
+    const batchName = options.batchName || `Import Batch - ${new Date().toLocaleString()}`;
+    const batchId = 'batch_' + Date.now().toString(36);
+
+    for (let i = 0; i < leads.length; i++) {
+      const lead = leads[i];
+      const rowNum = i + 1;
+
+      // Validation
+      if (!lead.name || !lead.name.trim()) {
+        errors.push({ row: rowNum, error: 'Name is required' });
+        continue;
+      }
+      if (!lead.phone || !lead.phone.trim()) {
+        errors.push({ row: rowNum, error: 'Phone number is required' });
+        continue;
+      }
+
+      const normPhone = normalizeSpokenPhone(lead.phone);
+      if (!normPhone || normPhone.length < 8) {
+        errors.push({ row: rowNum, error: `Invalid phone format: ${lead.phone}` });
+        continue;
+      }
+
+      // Duplicate Check
+      const isDuplicate = existingPhones.has(normPhone) || (lead.email && existingEmails.has(lead.email.toLowerCase().trim()));
+
+      const formattedLead = {
+        id: lead.id || 'lead_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        name: lead.name.trim(),
+        phone: normPhone,
+        email: lead.email ? lead.email.toLowerCase().trim() : null,
+        property_interest: lead.property_interest || 'General Inquiry',
+        notes: lead.notes || '',
+        budget: lead.budget || 'Flexible',
+        source: lead.source || 'CSV Import',
+        status: lead.status || 'New',
+        tags: Array.isArray(lead.tags) ? lead.tags : (lead.tags ? lead.tags.split(',').map(t => t.trim()) : []),
+        import_batch: batchName,
+        import_batch_id: batchId,
+        created_at: new Date().toISOString()
+      };
+
+      if (isDuplicate) {
+        duplicates.push(formattedLead);
+        if (options.skipDuplicates) {
+          continue;
+        }
+      }
+
+      validLeads.push(formattedLead);
+    }
+
+    // Rollback toggle
+    if (options.rollbackOnError && errors.length > 0) {
+      console.log(`❌ Rollback triggered: batch import contains ${errors.length} errors`);
+      return res.status(422).json({
+        success: false,
+        error: 'Validation failed. Rollback executed.',
+        errors,
+        importedCount: 0
+      });
+    }
+
+    if (validLeads.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No leads were imported (either skipped as duplicates or invalid rows).',
+        importedCount: 0,
+        errors,
+        duplicatesCount: duplicates.length
+      });
+    }
+
+    // Save valid leads to MongoDB DataSnapshot pe_leads
+    let updatedLeadsList = [...validLeads, ...currentLeads];
+    snapshot.data.pe_leads = typeof snapshot.data.pe_leads === 'string' ? JSON.stringify(updatedLeadsList) : updatedLeadsList;
+    snapshot.markModified('data');
+    await snapshot.save();
+
+    // Save to Supabase (if configured)
+    let supabaseSuccessCount = 0;
+    try {
+      const { createClient } = require('@supabase/supabase-js');
+      const sb = (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) 
+        ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY) 
+        : null;
+
+      if (sb) {
+        for (const lead of validLeads) {
+          try {
+            const { error } = await sb.from('leads').insert([{
+              id: lead.id,
+              name: lead.name,
+              phone: lead.phone,
+              email: lead.email,
+              property_interest: lead.property_interest,
+              notes: `[Batch: ${batchName}] ` + lead.notes,
+              source: lead.source,
+              status: lead.status,
+              budget: lead.budget,
+              created_at: lead.created_at
+            }]);
+            if (!error) supabaseSuccessCount++;
+          } catch (e) {
+            console.warn(`⚠️ Supabase lead save failed during batch import for ${lead.name}:`, e.message);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Supabase Client Error:', e.message);
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully imported ${validLeads.length} leads.`,
+      importedCount: validLeads.length,
+      batchName,
+      batchId,
+      duplicatesCount: duplicates.length,
+      errors,
+      supabaseSavedCount: supabaseSuccessCount
+    });
+
+  } catch (error) {
+    console.error('❌ Lead batch import failed:', error);
+    res.status(500).json({ error: 'Import failed: ' + error.message });
+  }
+});
+
+app.post('/api/campaigns/launch', protect, async (req, res) => {
+  let { agentEmail, campaign } = req.body;
+  if (!agentEmail) agentEmail = process.env.AGENT_EMAIL || 'saishivaraju.m2002@gmail.com';
+  if (!campaign || !campaign.name || !Array.isArray(campaign.leads) || campaign.leads.length === 0) {
+    return res.status(400).json({ error: 'Invalid campaign payload. Must have name and non-empty leads array.' });
+  }
+
+  console.log(`🚀 Launching AI Outreach Campaign "${campaign.name}" for ${agentEmail} with ${campaign.leads.length} leads.`);
+
+  try {
+    await connectDB();
+    let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+    if (!snapshot) snapshot = new DataSnapshot({ email: agentEmail, data: {} });
+    if (!snapshot.data) snapshot.data = {};
+
+    let campaigns = snapshot.data.pe_campaigns || [];
+    if (typeof campaigns === 'string') {
+      try { campaigns = JSON.parse(campaigns); } catch (e) { campaigns = []; }
+    }
+
+    const campId = campaign.id || 'camp_' + Date.now().toString(36);
+    const newCampaign = {
+      ...campaign,
+      id: campId,
+      status: 'running',
+      currentLeadIndex: 0,
+      outcomes: {},
+      metrics: {
+        called: 0,
+        completed: 0,
+        bookings: 0,
+        followups: 0,
+        failed: 0,
+        noAnswer: 0
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Pause any other running campaigns
+    campaigns.forEach(c => {
+      if (c.status === 'running') {
+        c.status = 'paused';
+        c.updated_at = new Date().toISOString();
+      }
+    });
+
+    campaigns.unshift(newCampaign);
+    snapshot.data.pe_campaigns = typeof snapshot.data.pe_campaigns === 'string' ? JSON.stringify(campaigns) : campaigns;
+    snapshot.markModified('data');
+    await snapshot.save();
+
+    // Trigger the first call
+    const firstLeadId = newCampaign.leads[0];
+    let leadsList = snapshot.data.pe_leads || [];
+    if (typeof leadsList === 'string') {
+      try { leadsList = JSON.parse(leadsList); } catch (e) { leadsList = []; }
+    }
+    const lead = leadsList.find(l => l.id === firstLeadId);
+
+    if (lead) {
+      console.log(`📞 Triggering first call of campaign for lead: ${lead.name} (${lead.phone})`);
+      const leadWithMeta = {
+        ...lead,
+        campaign_id: campId,
+        metadata: {
+          campaignId: campId,
+          leadId: lead.id,
+          phone: lead.phone
+        }
+      };
+
+      triggerAICall(leadWithMeta).catch(err => {
+        console.error(`❌ Campaign first call trigger failed for ${lead.name}:`, err.message);
+      });
+
+      newCampaign.metrics.called = 1;
+      snapshot.data.pe_campaigns = typeof snapshot.data.pe_campaigns === 'string' ? JSON.stringify(campaigns) : campaigns;
+      snapshot.markModified('data');
+      await snapshot.save();
+    } else {
+      console.warn(`⚠️ Lead ${firstLeadId} not found in snapshot leads list during campaign launch.`);
+    }
+
+    res.json({
+      success: true,
+      campaign: newCampaign
+    });
+
+  } catch (error) {
+    console.error('❌ Campaign launch failed:', error);
+    res.status(500).json({ error: 'Launch failed: ' + error.message });
+  }
+});
+
+app.post('/api/campaigns/:id/pause', protect, async (req, res) => {
+  const { id } = req.params;
+  let { agentEmail } = req.body;
+  if (!agentEmail) agentEmail = process.env.AGENT_EMAIL || 'saishivaraju.m2002@gmail.com';
+
+  try {
+    await connectDB();
+    let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+    if (!snapshot || !snapshot.data.pe_campaigns) return res.status(404).json({ error: 'Campaigns not found' });
+
+    let campaigns = snapshot.data.pe_campaigns;
+    if (typeof campaigns === 'string') {
+      try { campaigns = JSON.parse(campaigns); } catch (e) { campaigns = []; }
+    }
+
+    const campaign = campaigns.find(c => c.id === id);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    campaign.status = 'paused';
+    campaign.updated_at = new Date().toISOString();
+
+    snapshot.data.pe_campaigns = typeof snapshot.data.pe_campaigns === 'string' ? JSON.stringify(campaigns) : campaigns;
+    snapshot.markModified('data');
+    await snapshot.save();
+
+    res.json({ success: true, campaign });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/campaigns/:id/resume', protect, async (req, res) => {
+  const { id } = req.params;
+  let { agentEmail } = req.body;
+  if (!agentEmail) agentEmail = process.env.AGENT_EMAIL || 'saishivaraju.m2002@gmail.com';
+
+  try {
+    await connectDB();
+    let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+    if (!snapshot || !snapshot.data.pe_campaigns) return res.status(404).json({ error: 'Campaigns not found' });
+
+    let campaigns = snapshot.data.pe_campaigns;
+    if (typeof campaigns === 'string') {
+      try { campaigns = JSON.parse(campaigns); } catch (e) { campaigns = []; }
+    }
+
+    const campaign = campaigns.find(c => c.id === id);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    campaigns.forEach(c => {
+      if (c.status === 'running') {
+        c.status = 'paused';
+        c.updated_at = new Date().toISOString();
+      }
+    });
+
+    campaign.status = 'running';
+    campaign.updated_at = new Date().toISOString();
+
+    snapshot.data.pe_campaigns = typeof snapshot.data.pe_campaigns === 'string' ? JSON.stringify(campaigns) : campaigns;
+    snapshot.markModified('data');
+    await snapshot.save();
+
+    const nextIdx = campaign.currentLeadIndex;
+    if (nextIdx < campaign.leads.length) {
+      const nextLeadId = campaign.leads[nextIdx];
+      let leadsList = snapshot.data.pe_leads || [];
+      if (typeof leadsList === 'string') {
+        try { leadsList = JSON.parse(leadsList); } catch (e) { leadsList = []; }
+      }
+      const lead = leadsList.find(l => l.id === nextLeadId);
+      if (lead) {
+        console.log(`📞 Campaign resuming. Triggering call to current lead index ${nextIdx}: ${lead.name}`);
+        const leadWithMeta = {
+          ...lead,
+          campaign_id: id,
+          metadata: {
+            campaignId: id,
+            leadId: lead.id,
+            phone: lead.phone
+          }
+        };
+        triggerAICall(leadWithMeta).catch(e => console.error(e));
+      }
+    }
+
+    res.json({ success: true, campaign });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── AI SEQUENTIAL CALLING STATE MACHINE EXECUTOR ──
+async function executeCampaignStep(campaignId, leadId, isFailed, endedReason, duration, transcript, event) {
+  try {
+    const agentEmail = process.env.AGENT_EMAIL || 'saishivaraju.m2002@gmail.com';
+    let snapshot = await DataSnapshot.findOne({ email: agentEmail });
+    if (!snapshot || !snapshot.data.pe_campaigns) return;
+
+    let campaigns = snapshot.data.pe_campaigns;
+    const wasString = typeof campaigns === 'string';
+    if (wasString) {
+      try { campaigns = JSON.parse(campaigns); } catch (e) { campaigns = []; }
+    }
+
+    const campaign = campaigns.find(c => c.id === campaignId);
+    if (!campaign) return;
+
+    console.log(`📈 Processing Campaign step for Campaign: ${campaign.name} | Lead ID: ${leadId} | Status: ${campaign.status}`);
+
+    campaign.metrics = campaign.metrics || { called: 0, completed: 0, bookings: 0, followups: 0, failed: 0, noAnswer: 0 };
+    campaign.metrics.completed = (campaign.metrics.completed || 0) + 1;
+
+    let outcome = 'no answer';
+    if (isFailed) {
+      outcome = endedReason === 'phone-number-not-found' ? 'invalid number' : 'no answer';
+      campaign.metrics.noAnswer = (campaign.metrics.noAnswer || 0) + 1;
+      campaign.metrics.failed = (campaign.metrics.failed || 0) + 1;
+    } else {
+      const call = event?.message?.call || event?.call || {};
+      const messages = call.messages || [];
+      const transcriptLower = transcript.toLowerCase();
+
+      let appointmentBooked = false;
+      appointmentBooked = transcriptLower.includes('booked your visit') || transcriptLower.includes('visit is successfully confirmed');
+
+      const fnCalls = messages.filter(m => m.role === 'tool-calls' || m.type === 'tool-call');
+      if (fnCalls.some(f => f.functionCall?.name === 'bookVisit' || (f.toolCalls && f.toolCalls.some(tc => tc.function?.name === 'bookVisit')))) {
+        appointmentBooked = true;
+      }
+
+      if (appointmentBooked) {
+        outcome = 'booked appointment';
+        campaign.metrics.bookings = (campaign.metrics.bookings || 0) + 1;
+      } else if (transcriptLower.includes('not interested') || transcriptLower.includes('stop calling') || transcriptLower.includes('uninterested')) {
+        outcome = 'uninterested';
+      } else if (transcriptLower.includes('call me back') || transcriptLower.includes('callback') || transcriptLower.includes('call back')) {
+        outcome = 'callback requested';
+      } else {
+        outcome = 'follow-up needed';
+        campaign.metrics.followups = (campaign.metrics.followups || 0) + 1;
+      }
+    }
+
+    campaign.outcomes = campaign.outcomes || {};
+    campaign.outcomes[leadId] = outcome;
+
+    const prevIdx = campaign.currentLeadIndex;
+    const nextIdx = prevIdx + 1;
+    campaign.currentLeadIndex = nextIdx;
+    campaign.updated_at = new Date().toISOString();
+
+    console.log(`Campaign outcomes updated: ${leadId} -> ${outcome}`);
+    console.log(`Campaign metrics: ${JSON.stringify(campaign.metrics)}`);
+
+    if (campaign.status === 'running' && nextIdx < campaign.leads.length) {
+      const nextLeadId = campaign.leads[nextIdx];
+      let leadsList = snapshot.data.pe_leads || [];
+      if (typeof leadsList === 'string') {
+        try { leadsList = JSON.parse(leadsList); } catch (e) { leadsList = []; }
+      }
+      const nextLead = leadsList.find(l => l.id === nextLeadId);
+
+      if (nextLead) {
+        console.log(`⏰ Campaign sequential calling: Waiting 5 seconds before triggering next call to ${nextLead.name}`);
+
+        campaign.metrics.called = (campaign.metrics.called || 0) + 1;
+
+        snapshot.data.pe_campaigns = wasString ? JSON.stringify(campaigns) : campaigns;
+        snapshot.markModified('data');
+        await snapshot.save();
+
+        setTimeout(() => {
+          console.log(`🚀 [Sequential Calling] Dispatching call to ${nextLead.name} (${nextLead.phone})`);
+          const leadWithMeta = {
+            ...nextLead,
+            campaign_id: campaignId,
+            metadata: {
+              campaignId: campaignId,
+              leadId: nextLead.id,
+              phone: nextLead.phone
+            }
+          };
+          triggerAICall(leadWithMeta).catch(err => console.error('Sequential trigger failed:', err.message));
+        }, 5000);
+        return;
+      } else {
+        console.warn(`⚠️ Lead ${nextLeadId} not found in CRM leads list.`);
+      }
+    }
+
+    if (nextIdx >= campaign.leads.length) {
+      console.log(`🏁 Campaign completed! ID: ${campaignId}`);
+      campaign.status = 'completed';
+    }
+
+    snapshot.data.pe_campaigns = wasString ? JSON.stringify(campaigns) : campaigns;
+    snapshot.markModified('data');
+    await snapshot.save();
+
+    if (campaign.status === 'completed') {
+      await notifyAgent(agentEmail, {
+        title: `🏁 Campaign Completed: ${campaign.name}`,
+        description: `All ${campaign.leads.length} leads have been processed.\nBookings: ${campaign.metrics.bookings}\nFollow-ups: ${campaign.metrics.followups}\nNo Answer: ${campaign.metrics.noAnswer}`,
+        type: 'campaign',
+        icon: '📢',
+        emailSubject: `🏁 Campaign Completed: ${campaign.name}`
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error executing Campaign step:', error);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // SERVER
 // ──────────────────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
@@ -2327,6 +2797,68 @@ app.post('/api/vapi/webhook', async (req, res) => {
           console.error('Error fetching lead info in bookVisit webhook:', e.message);
         }
 
+        const {
+          normalizeSpokenEmail,
+          normalizeSpokenPhone,
+          normalizeSpokenTime,
+          normalizeSpokenDate,
+          validateBookingPayload,
+          extractDetailsFromTranscript
+        } = require('../services/extraction');
+
+        // Extract full structured details from transcript
+        const messages = event?.message?.call?.messages || event?.message?.messages || [];
+        console.log(`🧠 [Pipeline] Starting structured fallback extraction from ${messages.length} transcript lines`);
+        const extracted = await extractDetailsFromTranscript(messages, fnArgs) || {};
+        console.log('🧠 [Pipeline] Extracted details:', extracted);
+
+        // Merge VAPI arguments and extracted details
+        const payload = {
+          customer_name:    fnArgs.client_name || extracted.customer_name || leadInfo.name || call.customer?.name || 'Lead',
+          email:            fnArgs.client_email || extracted.email || leadInfo.email || call.customer?.email || '',
+          phone:            fnArgs.client_phone || extracted.phone || phone || leadInfo.phone || '',
+          visit_date:       fnArgs.visit_date || extracted.visit_date || '',
+          visit_time:       fnArgs.visit_time || extracted.visit_time || '',
+          property_address: fnArgs.property_interest || extracted.property_address || leadInfo.property_interest || 'Property Visit',
+          lead_type:        fnArgs.lead_type || extracted.lead_type || 'buyer',
+          budget:           fnArgs.budget || extracted.budget || leadInfo.budget || '',
+          preferred_area:   fnArgs.preferred_area || extracted.preferred_area || ''
+        };
+
+        // ── Normalization Layer
+        payload.email      = normalizeSpokenEmail(payload.email);
+        payload.phone      = normalizeSpokenPhone(payload.phone);
+        payload.visit_date = normalizeSpokenDate(payload.visit_date);
+        payload.visit_time = normalizeSpokenTime(payload.visit_time);
+
+        console.log('⚡ [Pipeline] Normalized payload:', payload);
+
+        // ── Validation Layer
+        const validation = validateBookingPayload(payload);
+        if (!validation.isValid) {
+          console.warn('❌ [Pipeline] Validation failed:', validation.errors);
+          
+          // Formulate conversational instructions back to Vapi AI
+          const recollectingField = validation.missingFields[0] || 'email';
+          let correctionPrompt = `Backend validation failed: ${validation.errors.join(' ')}.`;
+          if (recollectingField === 'email') {
+            correctionPrompt += ` The email provided ('${payload.email || 'blank'}') is malformed or invalid. Please say: "I have the date and time down, but it looks like there's a slight issue with that email. Let me verify it again — could you repeat the email address for me?"`;
+          } else if (recollectingField === 'visit_date') {
+            correctionPrompt += ` The date '${payload.visit_date || 'blank'}' is invalid or in the past. Please say: "It looks like that date won't work or might be in the past. Could you choose a different date for your visit?"`;
+          } else if (recollectingField === 'visit_time') {
+            correctionPrompt += ` The time '${payload.visit_time || 'blank'}' is invalid. Please say: "Could you specify a clear time for the viewing, like morning or afternoon, or a specific hour?"`;
+          } else {
+            correctionPrompt += ` Please ask the client to clarify their ${recollectingField.replace('_', ' ')}.`;
+          }
+
+          return res.json({
+            results: [{
+              toolCallId: event.message.functionCall.id,
+              result: correctionPrompt
+            }]
+          });
+        }
+
         // Save the booking
         try {
           const visitPayload = {
@@ -2334,27 +2866,27 @@ app.post('/api/vapi/webhook', async (req, res) => {
             is_ai_booking: true,
             visit: {
               lead_id: leadId || leadInfo.id || null,
-              client_name: leadInfo.name || call.customer?.name || 'Lead',
-              client_phone: phone || leadInfo.phone || '',
-              client_email: leadInfo.email || call.customer?.email || '',
-              property_name: fnArgs.property_interest || leadInfo.property_interest || 'Property Visit',
-              visit_date: fnArgs.visit_date,
-              visit_time: fnArgs.visit_time,
-              notes: `Booked by VAPI AI agent — call ID: ${call.id}`,
+              client_name: payload.customer_name,
+              client_phone: payload.phone,
+              client_email: payload.email,
+              property_name: payload.property_address,
+              visit_date: payload.visit_date,
+              visit_time: payload.visit_time,
+              notes: `Booked by VAPI AI agent Sarah — Call ID: ${call.id}\nLead Type: ${payload.lead_type}\nBudget: ${payload.budget}\nPreferred Area: ${payload.preferred_area}`,
               status: 'confirmed',
             }
           };
 
           const bookingResult = await processVisitBooking(visitPayload);
           
-          if (phone) await cancelFollowUps(phone);
+          if (payload.phone) await cancelFollowUps(payload.phone);
 
-          console.log(`✅ VAPI booking saved via processVisitBooking: ${fnArgs.visit_date} ${fnArgs.visit_time}`);
+          console.log(`✅ VAPI booking successfully confirmed & processed: ${payload.visit_date} ${payload.visit_time}`);
           
           return res.json({
             results: [{
               toolCallId: event.message.functionCall.id,
-              result: `Visit successfully booked for ${fnArgs.visit_date} at ${fnArgs.visit_time}. Tell the customer we look forward to seeing them!`
+              result: `Visit successfully booked for ${payload.visit_date} at ${payload.visit_time}. Tell the customer: "Fantastic! Your booking is successfully confirmed. You'll receive a confirmation email shortly."`
             }]
           });
         } catch (bookingError) {
@@ -2464,6 +2996,15 @@ Please check the market and contact them within 5 hours.
         recordingUrl: recording,
         status: duration > 10 ? 'answered' : 'no_answer',
       });
+
+      // 1.5. Sequential Campaign Calling Execution Hook
+      const campaignId = metadata.campaignId || metadata.campaign_id || null;
+      if (campaignId) {
+        console.log(`🎯 Sequential Outreach Campaign Hook active. ID: ${campaignId}`);
+        executeCampaignStep(campaignId, leadId, isFailed, endedReason, duration, transcript, event).catch(e => {
+          console.error('Campaign Step Error:', e.message);
+        });
+      }
 
       // 2. Extract structured qualification details from Vapi analysis report
       const analysis = event?.message?.analysis || event?.analysis || event?.message?.call?.analysis || {};

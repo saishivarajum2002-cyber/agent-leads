@@ -4,6 +4,9 @@ const { createClient } = require('@supabase/supabase-js');
  * Supabase Service
  * Handles leads, visits, qualifications, agreements, and documents
  */
+const fs = require('fs');
+const path = require('path');
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
@@ -12,59 +15,97 @@ const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supaba
 // ─── LEADS ────────────────────────────────────────────────────────────────────
 
 const saveLeadToSupabase = async (lead) => {
-  if (!supabase) return { success: false, error: 'Supabase not configured' };
+  const leadRecord = {
+    id: lead.id || 'lead_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    name: lead.name,
+    email: lead.email,
+    phone: lead.phone,
+    property_interest: lead.property_interest,
+    notes: lead.notes,
+    source: lead.source || 'Website',
+    status: lead.status || 'New',
+    budget: lead.budget || null,
+    bhk_preference: lead.bhk_preference || null,
+    pre_approval_status: lead.pre_approval_status || null,
+    qualification_score: lead.qualification_score || 0,
+    qualification_id: lead.qualification_id || null,
+    created_at: new Date().toISOString()
+  };
+
   try {
-    const leadRecord = {
-      name: lead.name,
-      email: lead.email,
-      phone: lead.phone,
-      property_interest: lead.property_interest,
-      notes: lead.notes,
-      source: lead.source || 'Website',
-      status: lead.status || 'New',
-      budget: lead.budget || null,
-      bhk_preference: lead.bhk_preference || null,
-      pre_approval_status: lead.pre_approval_status || null,
-      qualification_score: lead.qualification_score || 0,
-      qualification_id: lead.qualification_id || null,
-      created_at: new Date().toISOString()
-    };
+    if (!supabase) throw new Error('Supabase not configured');
     const { data, error } = await supabase.from('leads').insert([leadRecord]).select().single();
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error('❌ Supabase Lead Save Error:', error.message);
-    return { success: false, error: error.message };
+    console.warn('⚠️ Supabase Lead Save failed. Activating local database fallback backup due to offline/network state:', error.message);
+    try {
+      const backupDir = path.join(__dirname, '../data');
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+      const backupFile = path.join(backupDir, 'leads_backup.json');
+      let currentBackup = [];
+      if (fs.existsSync(backupFile)) {
+        currentBackup = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+      }
+      currentBackup.push(leadRecord);
+      fs.writeFileSync(backupFile, JSON.stringify(currentBackup, null, 2), 'utf8');
+      console.log(`💾 Local Backup: Lead saved to ${backupFile}`);
+      return { success: true, data: leadRecord, fallback: true };
+    } catch (fsErr) {
+      console.error('❌ Local database fallback also failed:', fsErr.message);
+      return { success: false, error: 'Database Save Failed: ' + error.message };
+    }
   }
 };
 
 // ─── VISITS ───────────────────────────────────────────────────────────────────
 
 const saveVisitToSupabase = async (visit) => {
-  if (!supabase) return { success: false, error: 'Supabase not configured' };
+  const visitRecord = {
+    id: visit.id || 'visit_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    property_name: visit.property_name,
+    client_name: visit.client_name,
+    client_email: visit.client_email,
+    client_phone: visit.client_phone,
+    visit_date: visit.visit_date,
+    visit_time: visit.visit_time,
+    status: visit.status || 'pending',
+    outcome: visit.outcome || null,
+    notes: visit.notes || null,
+    agreement_id: visit.agreement_id || null,
+    qualification_id: visit.qualification_id || null,
+    virtual_tour_link: visit.virtual_tour_link || null,
+    whatsapp_sent: false,
+    created_at: new Date().toISOString()
+  };
+
   try {
-    const visitRecord = {
-      property_name: visit.property_name,
-      client_name: visit.client_name,
-      client_email: visit.client_email,
-      client_phone: visit.client_phone,
-      visit_date: visit.visit_date,
-      visit_time: visit.visit_time,
-      status: visit.status || 'pending',
-      outcome: visit.outcome || null,
-      notes: visit.notes || null,
-      agreement_id: visit.agreement_id || null,
-      qualification_id: visit.qualification_id || null,
-      virtual_tour_link: visit.virtual_tour_link || null,
-      whatsapp_sent: false,
-      created_at: new Date().toISOString()
-    };
+    if (!supabase) throw new Error('Supabase not configured');
     const { data, error } = await supabase.from('visits').insert([visitRecord]).select().single();
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error('❌ Supabase Visit Save Error:', error.message);
-    return { success: false, error: error.message };
+    console.warn('⚠️ Supabase Visit Save failed. Activating local database fallback backup due to offline/network state:', error.message);
+    try {
+      const backupDir = path.join(__dirname, '../data');
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true });
+      }
+      const backupFile = path.join(backupDir, 'visits_backup.json');
+      let currentBackup = [];
+      if (fs.existsSync(backupFile)) {
+        currentBackup = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+      }
+      currentBackup.push(visitRecord);
+      fs.writeFileSync(backupFile, JSON.stringify(currentBackup, null, 2), 'utf8');
+      console.log(`💾 Local Backup: Visit saved to ${backupFile}`);
+      return { success: true, data: visitRecord, fallback: true };
+    } catch (fsErr) {
+      console.error('❌ Local database fallback also failed:', fsErr.message);
+      return { success: false, error: 'Database Save Failed: ' + error.message };
+    }
   }
 };
 

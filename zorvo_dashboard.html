@@ -127,7 +127,7 @@
       background: rgba(var(--accent-rgb), 0.15);
       border-color: var(--accent);
       color: var(--accent);
-      box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.2);
+      box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.12);
     }
 
     .f-chip:hover:not(.active) {
@@ -2121,6 +2121,52 @@
       display: block
     }
 
+    /* PREMIUM EMPTY STATES CSS */
+    .empty-state-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px 16px;
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius);
+      color: var(--muted);
+      margin: 8px 0;
+      transition: all 0.3s ease;
+    }
+    .empty-state-card i {
+      font-size: 24px;
+      color: rgba(var(--accent-rgb), 0.35);
+      margin-bottom: 10px;
+      transition: color 0.3s;
+    }
+    .empty-state-card p {
+      font-size: 13px;
+      font-weight: 500;
+      margin: 0 0 10px 0;
+      color: var(--muted);
+    }
+    .empty-state-card .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(var(--accent-rgb), 0.3);
+      color: var(--accent);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .empty-state-card .btn-outline:hover {
+      background: rgba(var(--accent-rgb), 0.08);
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
     /* STATS */
     .stats-grid {
       display: grid;
@@ -2179,7 +2225,7 @@
     }
 
     .stat-card.yellow:hover {
-      box-shadow: 0 8px 40px rgba(240, 192, 64, .2)
+      box-shadow: 0 8px 24px rgba(240, 192, 64, .1)
     }
 
     .stat-card.green::before {
@@ -2191,7 +2237,7 @@
     }
 
     .stat-card.green:hover {
-      box-shadow: 0 8px 40px rgba(46, 204, 138, .2)
+      box-shadow: 0 8px 24px rgba(46, 204, 138, .1)
     }
 
     .stat-card.blue::before {
@@ -2203,7 +2249,7 @@
     }
 
     .stat-card.blue:hover {
-      box-shadow: 0 8px 40px rgba(64, 144, 240, .2)
+      box-shadow: 0 8px 24px rgba(64, 144, 240, .1)
     }
 
     .stat-card.orange::before {
@@ -2215,7 +2261,7 @@
     }
 
     .stat-card.orange:hover {
-      box-shadow: 0 8px 40px rgba(224, 120, 48, .2)
+      box-shadow: 0 8px 24px rgba(224, 120, 48, .1)
     }
 
     .stat-label {
@@ -4631,6 +4677,175 @@
         box-shadow: 0 0 0 0 rgba(180, 40, 40, 0);
       }
     }
+
+    /* AI OUTREACH CAMPAIGNS STYLING */
+    .campaign-hud-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    .hud-card-glow {
+      background: rgba(13, 18, 27, 0.45);
+      border: 1px solid var(--border);
+      padding: 16px 20px;
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .hud-card-glow:hover {
+      transform: translateY(-2px);
+      border-color: rgba(240, 192, 64, 0.4); /* Glow accent color */
+      box-shadow: 0 8px 25px rgba(240, 192, 64, 0.1);
+    }
+    .hud-card-glow::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(240, 192, 64, 0.03) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .metric-value.glow-accent {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(240, 192, 64, 0.3);
+      margin: 8px 0 4px 0;
+      font-family: var(--font-head);
+    }
+    .metric-label-small {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+    .active-campaign-panel {
+      background: linear-gradient(135deg, rgba(13, 18, 27, 0.8), rgba(24, 32, 48, 0.5));
+      border: 1px solid rgba(46, 204, 138, 0.3);
+      box-shadow: 0 8px 30px rgba(46, 204, 138, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 25px;
+      backdrop-filter: blur(20px);
+      animation: borderPulse 3s infinite alternate;
+    }
+    @keyframes borderPulse {
+      0% { border-color: rgba(46, 204, 138, 0.25); }
+      100% { border-color: rgba(46, 204, 138, 0.55); }
+    }
+    .pulse-green-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background-color: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green);
+      animation: pulseGreen 1.5s infinite;
+      margin-right: 6px;
+    }
+    @keyframes pulseGreen {
+      0% { transform: scale(0.9); opacity: 0.6; }
+      50% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 12px var(--green); }
+      100% { transform: scale(0.9); opacity: 0.6; }
+    }
+    .progress-track {
+      background: rgba(255,255,255,0.05);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 12px 0;
+      position: relative;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      transition: width 0.6s ease;
+      box-shadow: 0 0 10px rgba(240, 192, 64, 0.5);
+    }
+    .import-drop-zone {
+      border: 2px dashed rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.01);
+      border-radius: 16px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+    .import-drop-zone:hover, .import-drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(240, 192, 64, 0.03);
+    }
+    .mapping-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+      background: rgba(255,255,255,0.01);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .mapping-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mapping-select {
+      background: rgba(13, 18, 27, 0.8);
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      outline: none;
+      font-size: 13px;
+    }
+    .mapping-select:focus {
+      border-color: var(--accent);
+    }
+    .import-preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+    .import-preview-table th {
+      text-align: left;
+      padding: 10px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+    }
+    .import-preview-table td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .pill-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .pill-badge.valid {
+      background: rgba(46, 204, 138, 0.15);
+      color: var(--green);
+    }
+    .pill-badge.invalid {
+      background: rgba(224, 80, 96, 0.15);
+      color: var(--red);
+    }
   </style>
 </head>
 
@@ -4676,6 +4891,8 @@
       <div class="nav-section-title">MAIN</div>
       <div class="nav-item active" onclick="showPanel('dashboard',this)"><span class="nav-icon"><i
             class="fas fa-chart-line"></i></span><span class="nav-label">Dashboard</span></div>
+      <div class="nav-item" onclick="showPanel('campaigns',this)"><span class="nav-icon"><i
+            class="fas fa-bullhorn"></i></span><span class="nav-label">AI Campaigns</span></div>
       <div class="nav-item" onclick="showPanel('leads',this)"><span class="nav-icon"><i
             class="fas fa-id-card"></i></span><span class="nav-label">Leads</span>
         <div class="nav-badge red" id="badge-leads" style="display:none">0</div>
@@ -4757,6 +4974,7 @@
         <div class="ss-close" onclick="toggleMobileMenu()">✕</div>
       </div>
       <div class="m-menu-body">
+        <div class="m-menu-item" onclick="showPanel('campaigns',null,true); toggleMobileMenu()"><i class="fas fa-bullhorn"></i> <span>AI Campaigns</span></div>
         <div class="m-menu-item" onclick="showPanel('properties',null,true); toggleMobileMenu()"><i class="fas fa-building"></i> <span>Property Listings</span></div>
         <div class="m-menu-item" onclick="showPanel('map',null,true); toggleMobileMenu()"><i class="fas fa-map-location-dot"></i> <span>Map View</span></div>
         <div class="m-menu-item" onclick="showPanel('analytics',null,true); toggleMobileMenu()"><i class="fas fa-chart-pie"></i> <span>Detailed Analytics</span></div>
@@ -5017,6 +5235,329 @@
           </div>
         </div>
       </div>
+      <!-- AI OUTREACH CAMPAIGNS PANEL -->
+      <div class="panel" id="panel-campaigns">
+        <div class="sec-head">
+          <div class="sec-title">AI Outreach Campaigns</div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="openModal('launchCampaign')" style="background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #000; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+              🚀 Launch AI Campaign
+            </button>
+            <button class="btn btn-secondary" onclick="toggleImportArea()" style="display: flex; align-items: center; gap: 6px;">
+              📥 Import Leads File
+            </button>
+          </div>
+        </div>
+
+        <div style="color: var(--muted); font-size: 14px; margin-bottom: 25px; margin-top: -15px;">
+          Qualify leads, nurture cold contacts, and book physical property visits automatically via human-like AI calling. No password sharing required.
+        </div>
+
+        <!-- 1. DYNAMIC CSV IMPORT AREA -->
+        <div id="campaign-import-area" style="display: none; background: rgba(13, 18, 27, 0.6); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 25px; backdrop-filter: blur(20px);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div style="font-weight: 800; font-size: 16px; color: #fff;">Import Leads via CSV File</div>
+            <div style="cursor: pointer; color: var(--muted);" onclick="toggleImportArea()">✕ Close</div>
+          </div>
+
+          <div class="import-drop-zone" id="csv-drop-zone" onclick="document.getElementById('csv-file-input').click()">
+            <div style="font-size: 32px; margin-bottom: 10px;">📁</div>
+            <div style="font-weight: 700; color: #fff; margin-bottom: 4px;">Drag and drop your Zillow/CRM CSV file here</div>
+            <div style="font-size: 12px; color: var(--muted);">or click to browse your files</div>
+            <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="handleCSVFileSelect(event)">
+          </div>
+
+          <!-- Mapping Step (Shown after file selected) -->
+          <div id="import-mapping-step" style="display: none;">
+            <div style="font-weight: 700; color: #fff; margin-top: 15px;">Column Field Mapping</div>
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 10px;">Map your CSV columns to CRM Lead Fields.</div>
+            
+            <div class="mapping-grid" id="mapping-selectors-container">
+              <!-- Dynamically populated selectors -->
+            </div>
+
+            <!-- Import Options & Safety controls -->
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 10px;">
+              <div style="flex: 1; min-width: 250px;">
+                <label style="font-weight: 700; font-size: 13px; color: #fff; display: block; margin-bottom: 4px;">CRM Safety & Validation</label>
+                <div style="display: flex; gap: 15px; font-size: 12px;">
+                  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--muted)">
+                    <input type="checkbox" id="import-opt-rollback" checked> Strict Rollback (Cancel on error)
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--muted)">
+                    <input type="checkbox" id="import-opt-skipdup" checked> Skip Duplicate Phone/Emails
+                  </label>
+                </div>
+              </div>
+              <div style="width: 200px;">
+                <label style="font-weight: 700; font-size: 13px; color: #fff; display: block; margin-bottom: 4px;">Import Batch Name</label>
+                <input type="text" id="import-batch-name-input" placeholder="Zillow Export May 27" style="padding: 8px 12px; font-size: 13px; margin: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: #fff; width: 100%;">
+              </div>
+            </div>
+
+            <!-- Preview Data Grid -->
+            <div style="margin-top: 20px; overflow-x: auto;">
+              <div style="font-weight: 700; color: #fff; margin-bottom: 8px;">Lead Verification Preview (Top 5 rows)</div>
+              <table class="import-preview-table">
+                <thead>
+                  <tr id="preview-table-headers"></tr>
+                </thead>
+                <tbody id="preview-table-body"></tbody>
+              </table>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+              <button class="btn btn-secondary" onclick="resetImportFlow()" style="padding: 8px 16px;">Reset</button>
+              <button class="btn btn-primary" onclick="submitImportedLeads()" style="background: var(--green); color:#000; font-weight:800; border:none; padding: 8px 20px;" id="btn-submit-import">
+                📥 Import CRM Leads
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. CAMPAIGN METRICS HUD GRID -->
+        <div class="campaign-hud-grid">
+          <div class="hud-card-glow">
+            <div class="metric-label-small">Campaign Status</div>
+            <div class="metric-value glow-accent" id="camp-hud-status" style="color: var(--muted); font-size: 26px;">No Active</div>
+            <div style="font-size: 11px; color: var(--muted);" id="camp-hud-sub">No campaigns triggered today</div>
+          </div>
+          <div class="hud-card-glow">
+            <div class="metric-label-small">Leads Called</div>
+            <div class="metric-value glow-accent" id="camp-hud-called">0</div>
+            <div style="font-size: 11px; color: var(--muted);" id="camp-hud-called-sub">Outreach dispatched</div>
+          </div>
+          <div class="hud-card-glow">
+            <div class="metric-label-small">Conversations</div>
+            <div class="metric-value glow-accent" id="camp-hud-completed" style="color: var(--blue);">0</div>
+            <div style="font-size: 11px; color: var(--muted);" id="camp-hud-completed-sub">Completed calls</div>
+          </div>
+          <div class="hud-card-glow">
+            <div class="metric-label-small">Booked Visits</div>
+            <div class="metric-value glow-accent" id="camp-hud-bookings" style="color: var(--green);">0</div>
+            <div style="font-size: 11px; color: var(--muted);" id="camp-hud-bookings-sub">0% conversion rate</div>
+          </div>
+          <div class="hud-card-glow">
+            <div class="metric-label-small">Failed / No Answer</div>
+            <div class="metric-value glow-accent" id="camp-hud-failed" style="color: var(--red);">0%</div>
+            <div style="font-size: 11px; color: var(--muted);" id="camp-hud-failed-sub">Unreachable / Busy rate</div>
+          </div>
+        </div>
+
+        <!-- 3. ACTIVE CAMPAIGN CONTROLLER -->
+        <div class="active-campaign-panel" id="active-campaign-monitor" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="pulse-green-dot"></span>
+                <span style="font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 900; color: var(--green);">AI Sequence Running</span>
+              </div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 6px;" id="active-camp-name">Zillow Lead Outbound Activation</h3>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary" id="active-camp-pause-btn" onclick="pauseActiveCampaign()" style="padding: 6px 14px; font-size: 13px;">
+                ⏸ Pause
+              </button>
+              <button class="btn btn-secondary" id="active-camp-resume-btn" onclick="resumeActiveCampaign()" style="padding: 6px 14px; font-size: 13px; display: none;">
+                ▶ Resume
+              </button>
+              <button class="btn btn-danger" onclick="terminateActiveCampaign()" style="padding: 6px 14px; font-size: 13px; background: rgba(220,53,69,0.2); border: 1px solid rgba(220,53,69,0.4); color: var(--red);">
+                🛑 Terminate
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--muted);">
+              <span>Outreach Sequence Progress</span>
+              <span id="active-camp-progress-label">0 / 0 Leads (0%)</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-bar-fill" id="active-camp-progress-bar"></div>
+            </div>
+          </div>
+
+          <!-- Current Call Ticker -->
+          <div style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.02); padding: 12px 16px; border-radius: 12px; margin-top: 15px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="font-size: 20px;">📞</div>
+            <div style="flex: 1;">
+              <div style="font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Current Active Call Target</div>
+              <div style="font-size: 14px; font-weight: 700; color: #fff;" id="active-camp-ticker-target">Connecting next lead...</div>
+            </div>
+            <div id="active-camp-ticker-status" style="font-size: 12px; font-weight: 700; color: var(--accent); background: rgba(240, 192, 64, 0.1); padding: 4px 10px; border-radius: 20px;">
+              DISPATCHING
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. CAMPAIGN HISTORY LIST -->
+        <div class="card" style="margin-top: 25px; padding: 20px;">
+          <div style="font-weight: 800; font-size: 16px; color: #fff; margin-bottom: 15px;">AI Campaign History</div>
+          
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border); text-align: left; font-size: 12px; color: var(--muted);">
+                  <th style="padding: 12px 8px;">CAMPAIGN DETAILS</th>
+                  <th style="padding: 12px 8px;">STATUS</th>
+                  <th style="padding: 12px 8px;">PROGRESS</th>
+                  <th style="padding: 12px 8px;">OUTCOMES</th>
+                  <th style="padding: 12px 8px;">CREATED AT</th>
+                  <th style="padding: 12px 8px; text-align: right;">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="campaign-history-rows">
+                <!-- Dynamically loaded -->
+              </tbody>
+            </table>
+            
+            <div id="campaign-history-empty" style="text-align: center; padding: 40px; color: var(--muted); display: none;">
+              <div style="font-size: 32px; opacity: 0.2; margin-bottom: 10px;">📢</div>
+              No campaign history found. Create your first campaign sequence above!
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- LAUNCH CAMPAIGN WIZARD MODAL -->
+      <div id="modal-launchCampaign" class="modal-overlay" onclick="closeModal('launchCampaign')">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 600px;">
+          <div class="modal-title">🚀 Launch AI Outreach Campaign</div>
+          <div class="modal-close" onclick="closeModal('launchCampaign')">✕</div>
+
+          <div class="modal-body" style="padding: 20px;">
+            <!-- STEP 1: SELECT LEADS -->
+            <div id="camp-wiz-step-1">
+              <div style="font-weight: 700; color: #fff; margin-bottom: 6px;">Step 1: Filter & Select CRM Leads</div>
+              <div style="font-size: 13px; color: var(--muted); margin-bottom: 15px;">Filter your lead database to define the campaign dialing pool.</div>
+
+              <!-- Quick filters -->
+              <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
+                <button class="btn" style="padding: 6px 12px; font-size: 12px; background: rgba(240, 192, 64, 0.1); border: 1px solid rgba(240, 192, 64, 0.2); color: var(--accent);" onclick="filterWizLeads('all')">
+                  All Leads
+                </button>
+                <button class="btn" style="padding: 6px 12px; font-size: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #fff;" onclick="filterWizLeads('zillow')">
+                  Zillow Imports
+                </button>
+                <button class="btn" style="padding: 6px 12px; font-size: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #fff;" onclick="filterWizLeads('cold')">
+                  Cold Leads
+                </button>
+                <button class="btn" style="padding: 6px 12px; font-size: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #fff;" onclick="filterWizLeads('missed')">
+                  Missed Inquiries
+                </button>
+              </div>
+
+              <!-- Leads Select Table -->
+              <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.2);">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+                      <th style="padding: 10px; width: 40px;"><input type="checkbox" id="wiz-select-all-leads" onchange="toggleSelectAllWizLeads(this)" checked></th>
+                      <th style="padding: 10px; color: var(--muted);">LEAD NAME</th>
+                      <th style="padding: 10px; color: var(--muted);">PHONE</th>
+                      <th style="padding: 10px; color: var(--muted);">INTEREST / BATCH</th>
+                    </tr>
+                  </thead>
+                  <tbody id="wiz-leads-table-rows">
+                    <!-- Loaded via JS -->
+                  </tbody>
+                </table>
+              </div>
+              <div style="font-size: 12px; color: var(--muted); margin-top: 8px;" id="wiz-selected-count-label">
+                0 Leads selected for dialing.
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="goToWizStep(2)">Next: Configuration ➔</button>
+              </div>
+            </div>
+
+            <!-- STEP 2: SETUP CONFIGURATION -->
+            <div id="camp-wiz-step-2" style="display: none;">
+              <div style="font-weight: 700; color: #fff; margin-bottom: 6px;">Step 2: Campaign Configuration</div>
+              <div style="font-size: 13px; color: var(--muted); margin-bottom: 20px;">Define dialing speed, Tone and AI instruction overrides.</div>
+
+              <div style="margin-bottom: 15px;">
+                <label style="font-weight: 700; font-size: 13px; color: #fff; display: block; margin-bottom: 6px;">Campaign Name</label>
+                <input type="text" id="wiz-camp-name" placeholder="Outbound Campaign" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: #fff;">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div>
+                  <label style="font-weight: 700; font-size: 13px; color: #fff; display: block; margin-bottom: 6px;">Dialing Speed / Delay</label>
+                  <select id="wiz-camp-delay" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: #fff;">
+                    <option value="5">5s (Safe delay between calls)</option>
+                    <option value="10">10s (Moderate spacing)</option>
+                    <option value="20">20s (Extended verification window)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-weight: 700; font-size: 13px; color: #fff; display: block; margin-bottom: 6px;">AI Tone / Persona</label>
+                  <select id="wiz-camp-tone" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: #fff;">
+                    <option value="friendly">Friendly & Supportive (Default)</option>
+                    <option value="luxury">Luxury Elite Real Estate Agent</option>
+                    <option value="direct">Direct & Solution-Focused</option>
+                    <option value="investor">Wholesale Property Buyer</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="margin-bottom: 15px;">
+                <label style="font-weight: 700; font-size: 13px; color: #fff; display: block; margin-bottom: 6px;">Custom Outreach Instructions (Optional)</label>
+                <textarea id="wiz-camp-custom-instructions" placeholder="e.g. Tell them we are offering free virtual consultations or that we just updated our pricing guide." style="width: 100%; height: 80px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: #fff; font-family: sans-serif; resize: none;"></textarea>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; margin-top: 25px;">
+                <button class="btn btn-secondary" onclick="goToWizStep(1)">✕ Back</button>
+                <button class="btn btn-primary" onclick="goToWizStep(3)" style="background: linear-gradient(135deg, var(--accent), var(--accent2)); color:#000; font-weight:800; border: none;">Review & Confirm ➔</button>
+              </div>
+            </div>
+
+            <!-- STEP 3: REVIEW & DISPATCH -->
+            <div id="camp-wiz-step-3" style="display: none;">
+              <div style="font-weight: 700; color: #fff; margin-bottom: 6px;">Step 3: Review Outreach Strategy</div>
+              <div style="font-size: 13px; color: var(--muted); margin-bottom: 20px;">Review dialing pool and start fully-automated calling instantly.</div>
+
+              <div style="background: rgba(13, 18, 27, 0.5); padding: 16px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--muted);">Campaign Name:</span>
+                  <span style="font-weight: 700; color: #fff;" id="wiz-review-name">Campaign</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--muted);">Dialing Target Size:</span>
+                  <span style="font-weight: 700; color: var(--accent);" id="wiz-review-size">0 Leads</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--muted);">AI Agent Personality:</span>
+                  <span style="font-weight: 700; color: #fff;" id="wiz-review-persona">Friendly Tone</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: var(--muted);">Dialing Delay:</span>
+                  <span style="font-weight: 700; color: #fff;" id="wiz-review-delay">5 seconds between calls</span>
+                </div>
+              </div>
+
+              <!-- Safety Warning -->
+              <div style="margin-top: 15px; display: flex; gap: 10px; align-items: flex-start; padding: 12px; background: rgba(240, 192, 64, 0.05); border: 1px solid rgba(240, 192, 64, 0.15); border-radius: 10px; font-size: 12px;">
+                <span>⚠️</span>
+                <span style="color: var(--muted); line-height: 1.4;">
+                  <strong style="color: var(--accent);">Outbound Policy Agreement:</strong> The AI Agent will call these contacts sequentially. Ensure you have obtained appropriate consent before initiating high-frequency outreach.
+                </span>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; margin-top: 25px;">
+                <button class="btn btn-secondary" onclick="goToWizStep(2)">✕ Back</button>
+                <button class="btn btn-primary" onclick="launchOutreachCampaign()" style="background: linear-gradient(135deg, var(--green), #2ed8a3); color:#000; font-weight:800; border: none; padding: 10px 24px; box-shadow: 0 0 15px rgba(46, 204, 138, 0.4);">
+                  🚀 Dispatch Campaign Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="panel" id="panel-leads">
         <div class="sec-head">
           <div class="sec-title">Lead Management</div><button class="btn btn-primary" onclick="openModal('addLead')">+
@@ -5802,6 +6343,18 @@
             </div>
           </div>
         </div>
+
+        <!-- DEMO UTILITIES & RESET -->
+        <div class="card" style="margin-top:16px; border-color: rgba(var(--accent-rgb), 0.15)">
+          <div class="card-header" style="border-bottom-color: rgba(var(--accent-rgb), 0.1)">
+            <div class="card-title"><i class="fas fa-tools"></i> Demo Utilities & Seeding</div>
+            <span style="font-size:12px;color:var(--muted)">Manage data simulation and system seeding state during client presentations.</span>
+          </div>
+          <div class="card-body" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="DB.seedDemo(); renderAll(); toast('Demo Data Successfully Re-seeded! 🚀')"><i class="fas fa-sync-alt"></i> Re-seed Demo Bookings & Leads</button>
+            <button class="btn btn-ghost" onclick="if(confirm('Are you sure you want to clear all local data?')){ localStorage.clear(); window.location.reload(); }"><i class="fas fa-trash-alt"></i> Clear Local Cache & Restart</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -6582,6 +7135,12 @@
       },
 
       seedDemo() {
+        localStorage.removeItem(this.LEADS);
+        localStorage.removeItem(this.PROPERTIES);
+        localStorage.removeItem(this.BOOKINGS);
+        localStorage.removeItem(this.NOTIFICATIONS);
+        localStorage.removeItem('pe_calls');
+
         [
           { name: 'Omar Al-Farsi', phone: '+971 50 111 2222', email: 'omar@email.com', property_interest: '3BR Villa, Palm District', status: 'New', score: 94, notes: 'Very interested, budget confirmed.', source: 'WhatsApp', pipeline_stage: 'New' },
           { name: 'David Chen', phone: '+852 91 234 567', email: 'david@email.com', property_interest: '2BR, Riverside', status: 'Contacted', score: 81, notes: 'Prefers morning tours.', source: 'Website', pipeline_stage: 'Negotiation' },
@@ -6596,6 +7155,32 @@
           { name: 'Downtown Loft', address: 'Business Bay', price: 420000, bedrooms: '1', bathrooms: '1', area_sqft: 750, status: 'Sold', emoji: 'Apartment', views: 145, description: 'Sophisticated urban loft in the heart of Business Bay.', images: ['https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=600&q=80'], latitude: 25.1901, longitude: 55.2643 },
         ].forEach(p => this.insert(this.PROPERTIES, p));
 
+        const today = new Date().toISOString().split('T')[0];
+        const tomorrowObj = new Date();
+        tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+        const tomorrow = tomorrowObj.toISOString().split('T')[0];
+        const yesterdayObj = new Date();
+        yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+        const yesterday = yesterdayObj.toISOString().split('T')[0];
+        [
+          { client_name: 'Aisha Khalid', client_phone: '+971 52 987 6543', client_email: 'aisha@email.com', property_name: 'Palm Villa Estate', visit_date: today, visit_time: '14:00', status: 'confirmed', notes: 'Interested in sunset beachfront view.' },
+          { client_name: 'Marcus Vance', client_phone: '+1 415 555 2671', client_email: 'marcus@email.com', property_name: 'Skyview Residences', visit_date: tomorrow, visit_time: '10:00', status: 'confirmed', notes: 'First-time buyer, pre-approved.' },
+          { client_name: 'Omar Al-Farsi', client_phone: '+971 50 111 2222', client_email: 'omar@email.com', property_name: 'Skyview Residences', visit_date: yesterday, visit_time: '16:30', status: 'completed', outcome: 'Interested in placing an offer.', notes: 'Loved the skyline views.' }
+        ].forEach(b => this.insert(this.BOOKINGS, b));
+
+        [
+          { title: 'New Lead: Omar Al-Farsi', description: 'Interested in 3BR Villa · Palm District', type: 'lead', icon: 'fas fa-user-plus', is_read: false },
+          { title: 'Tour Request: Aisha Khalid', description: 'Wants to visit Palm Villa Estate · Today 2:00 PM', type: 'booking', icon: 'fas fa-calendar-check', is_read: false },
+          { title: 'Deal Closed: Ali Hassan', description: 'Skyview 3BR closed at $920,000', type: 'deal', icon: 'fas fa-handshake', is_read: true },
+        ].forEach(n => this.insert(this.NOTIFICATIONS, n));
+
+        // Load into memory state
+        state.leads = DB.getAll(DB.LEADS);
+        state.properties = DB.getAll(DB.PROPERTIES);
+        state.bookings = DB.getAll(DB.BOOKINGS);
+        state.notifications = DB.getAll(DB.NOTIFICATIONS);
+
+        this.sync();
         toast('System Seeded with Demo Data! <i class="fas fa-rocket"></i>');
       },
 
@@ -6622,6 +7207,20 @@
             { name: 'Palm Villa Estate', address: 'Palm Jumeirah', price: 2400000, bedrooms: '5+', bathrooms: '5+', area_sqft: 6800, status: 'Pending', emoji: 'Villa', views: 312, description: 'Extraordinary beachfront villa with private beach and infinity pool.', images: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80', 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=600&q=80', 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&q=80', 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&q=80'], latitude: 25.1124, longitude: 55.1390 },
             { name: 'Downtown Loft', address: 'Business Bay', price: 420000, bedrooms: '1', bathrooms: '1', area_sqft: 750, status: 'Sold', emoji: 'Apartment', views: 145, description: 'Sophisticated urban loft in the heart of Business Bay.', images: ['https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=600&q=80'], latitude: 25.1901, longitude: 55.2643 },
           ].forEach(p => this.insert(this.PROPERTIES, p));
+        }
+        if (!this.getAll(this.BOOKINGS).length) {
+          const today = new Date().toISOString().split('T')[0];
+          const tomorrowObj = new Date();
+          tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+          const tomorrow = tomorrowObj.toISOString().split('T')[0];
+          const yesterdayObj = new Date();
+          yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+          const yesterday = yesterdayObj.toISOString().split('T')[0];
+          [
+            { client_name: 'Aisha Khalid', client_phone: '+971 52 987 6543', client_email: 'aisha@email.com', property_name: 'Palm Villa Estate', visit_date: today, visit_time: '14:00', status: 'confirmed', notes: 'Interested in sunset beachfront view.' },
+            { client_name: 'Marcus Vance', client_phone: '+1 415 555 2671', client_email: 'marcus@email.com', property_name: 'Skyview Residences', visit_date: tomorrow, visit_time: '10:00', status: 'confirmed', notes: 'First-time buyer, pre-approved.' },
+            { client_name: 'Omar Al-Farsi', client_phone: '+971 50 111 2222', client_email: 'omar@email.com', property_name: 'Skyview Residences', visit_date: yesterday, visit_time: '16:30', status: 'completed', outcome: 'Interested in placing an offer.', notes: 'Loved the skyline views.' }
+          ].forEach(b => this.insert(this.BOOKINGS, b));
         }
         if (!this.getAll(this.NOTIFICATIONS).length) {
           [
@@ -6736,6 +7335,11 @@
         // 5. High-Performance Dashboard Inits
         updateAutoRespondUI();
         if (!localStorage.getItem('pe_auto_respond')) localStorage.setItem('pe_auto_respond', 'true'); // Default to ON
+
+        // Initialize AI Outreach Campaigns polling & setup
+        renderCampaignHistory();
+        updateCampaignHUD();
+        startCampaignPolling();
 
 
       } catch (err) {
@@ -6884,6 +7488,10 @@
       renderSettings();
       renderIntegrations();
 
+      // Campaigns render layer
+      if (typeof renderCampaignHistory === 'function') renderCampaignHistory();
+      if (typeof updateCampaignHUD === 'function') updateCampaignHUD();
+
       // Elite Performance Layer
       renderDailyActionPlan();
       updateLeadScoring();
@@ -7016,7 +7624,12 @@
           <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')" title="Delete Visit">🗑️</button>
         </div>
       </div>`;
-        }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:14px">No visits today</div>';
+        }).join('') : `
+      <div class="empty-state-card" style="margin: 0; padding: 20px 10px;">
+        <i class="fa-regular fa-calendar-xmark" style="font-size: 20px; color: rgba(var(--accent-rgb), 0.3);"></i>
+        <p style="font-size: 12px; margin-bottom: 8px;">No tours scheduled yet</p>
+        <button class="btn-outline" onclick="openModal('addBooking')">Schedule Tour</button>
+      </div>`;
       }
 
       // Pending Approvals List REMOVED
@@ -7027,14 +7640,22 @@
       const topP = [...state.properties].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
       const dTopProp = document.getElementById('d-top-prop');
       if (dTopProp) {
-        dTopProp.innerHTML = topP ? `<div style="font-size:28px;margin-bottom:6px">🏆</div><div style="font-weight:600">${topP.name}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${topP.views} views · $${fmtNum(topP.price)}</div>` : '<div style="color:var(--muted);font-size:13px">No properties yet</div>';
+        dTopProp.innerHTML = topP ? `<div style="font-size:28px;margin-bottom:6px">🏆</div><div style="font-weight:600">${topP.name}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${topP.views} views · $${fmtNum(topP.price)}</div>` : `
+      <div class="empty-state-card" style="margin: 0; padding: 16px 8px; border: none; background: transparent;">
+        <i class="fa-regular fa-building" style="font-size: 18px; color: rgba(var(--accent-rgb), 0.25);"></i>
+        <p style="font-size: 11px; margin-bottom: 0;">No active properties tracked yet</p>
+      </div>`;
       }
 
       // Next booking
       const nb = state.bookings.filter(b => b.visit_date >= today && (b.status || '').toLowerCase() !== 'rejected').sort((a, b) => a.visit_date.localeCompare(b.visit_date))[0];
       const dNextBooking = document.getElementById('d-next-booking');
       if (dNextBooking) {
-        dNextBooking.innerHTML = nb ? `<div style="font-size:28px;margin-bottom:6px">📅</div><div style="font-weight:600">${nb.visit_date}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${nb.client_name} · ${nb.visit_time || ''}</div><div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="btn btn-primary btn-sm" onclick="updateBookingStatus('${nb.id}','confirmed')">Confirm</button></div>` : '<div style="color:var(--muted);font-size:13px">No upcoming tours</div>';
+        dNextBooking.innerHTML = nb ? `<div style="font-size:28px;margin-bottom:6px">📅</div><div style="font-weight:600">${nb.visit_date}</div><div style="font-size:12px;color:var(--muted);margin-top:3px">${nb.client_name} · ${nb.visit_time || ''}</div><div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="btn btn-primary btn-sm" onclick="updateBookingStatus('${nb.id}','confirmed')">Confirm</button></div>` : `
+      <div class="empty-state-card" style="margin: 0; padding: 16px 8px; border: none; background: transparent;">
+        <i class="fa-regular fa-clock" style="font-size: 18px; color: rgba(var(--accent-rgb), 0.25);"></i>
+        <p style="font-size: 11px; margin-bottom: 0;">No upcoming tours</p>
+      </div>`;
       }
 
       // 4. Update HUD
@@ -10531,7 +11152,721 @@ ${date}`;
       }
     }
 
-    // openWhatsApp removed — use sendLeadEmail() instead
+    // ================================================================
+    // AI OUTREACH CAMPAIGNS & CSV LEAD IMPORT CORE LOGIC
+    // ================================================================
+    let parsedCSV = { headers: [], rows: [] };
+    let wizActiveStep = 1;
+    let wizSelectedFilter = 'all';
+
+    // Toggle Lead Import Box
+    function toggleImportArea() {
+      const el = document.getElementById('campaign-import-area');
+      if (el.style.display === 'none') {
+        el.style.display = 'block';
+        resetImportFlow();
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    // Reset Import Flow
+    function resetImportFlow() {
+      document.getElementById('csv-file-input').value = '';
+      document.getElementById('import-mapping-step').style.display = 'none';
+      document.getElementById('csv-drop-zone').style.display = 'block';
+      parsedCSV = { headers: [], rows: [] };
+    }
+
+    // Handle CSV File Select
+    function handleCSVFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        parseCSVText(e.target.result);
+      };
+      reader.readAsText(file);
+    }
+
+    // Robust CSV Text Parser supporting quotes
+    function parseCSVText(text) {
+      const lines = [];
+      let row = [""];
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+        let nextChar = text[i+1];
+
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            row[row.length - 1] += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          row.push('');
+        } else if ((char === '\r' || char === '\n') && !inQuotes) {
+          if (char === '\r' && nextChar === '\n') {
+            i++;
+          }
+          lines.push(row);
+          row = [''];
+        } else {
+          row[row.length - 1] += char;
+        }
+      }
+      if (row.length > 1 || row[0] !== '') {
+        lines.push(row);
+      }
+
+      if (lines.length < 2) {
+        showToast('❌ Invalid CSV file. Needs at least header and one data row.', 'danger');
+        return;
+      }
+
+      const headers = lines[0].map(h => h.trim().replace(/^"|"$/g, ''));
+      const rows = lines.slice(1).filter(r => r.some(cell => cell.trim() !== ''));
+
+      parsedCSV = { headers, rows };
+      
+      // Auto-suggest matches
+      showMappingUI(headers, rows);
+    }
+
+    // Render Mapping UI
+    function showMappingUI(headers, rows) {
+      document.getElementById('csv-drop-zone').style.display = 'none';
+      document.getElementById('import-mapping-step').style.display = 'block';
+
+      const fields = [
+        { key: 'name', label: 'Lead Full Name *', matches: ['name', 'full name', 'first name', 'client', 'contact'] },
+        { key: 'phone', label: 'Phone Number *', matches: ['phone', 'mobile', 'cell', 'number', 'telephone', 'phone number'] },
+        { key: 'email', label: 'Email Address', matches: ['email', 'e-mail', 'email address', 'mail'] },
+        { key: 'property_interest', label: 'Property Interest', matches: ['property', 'interest', 'listing', 'address', 'home'] },
+        { key: 'budget', label: 'Stated Budget', matches: ['budget', 'price', 'max price', 'amount'] },
+        { key: 'notes', label: 'Import Notes', matches: ['notes', 'comment', 'remarks', 'notes/remarks'] },
+        { key: 'tags', label: 'Lead Tags', matches: ['tags', 'tag', 'source', 'platform'] }
+      ];
+
+      const container = document.getElementById('mapping-selectors-container');
+      container.innerHTML = '';
+
+      fields.forEach(f => {
+        let bestMatch = '';
+        
+        // Match algorithms
+        headers.forEach(h => {
+          const cleanH = h.toLowerCase().trim();
+          if (f.matches.includes(cleanH)) {
+            bestMatch = h;
+          }
+        });
+
+        // Fallback checks
+        if (!bestMatch) {
+          headers.forEach(h => {
+            const cleanH = h.toLowerCase().trim();
+            if (cleanH.includes(f.key) || f.matches.some(m => cleanH.includes(m))) {
+              bestMatch = h;
+            }
+          });
+        }
+
+        const div = document.createElement('div');
+        div.className = 'mapping-item';
+        div.innerHTML = `
+          <label style="font-size: 12px; font-weight: 700; color: #fff;">${f.label}</label>
+          <select class="mapping-select" id="map-select-${f.key}" onchange="updatePreviewTable()">
+            <option value="">-- Skip Field --</option>
+            ${headers.map(h => `<option value="${h}" ${h === bestMatch ? 'selected' : ''}>${h}</option>`).join('')}
+          </select>
+        `;
+        container.appendChild(div);
+      });
+
+      // Default Batch name
+      document.getElementById('import-batch-name-input').value = `Import Batch - ${new Date().toLocaleDateString()}`;
+
+      updatePreviewTable();
+    }
+
+    // Update Preview Table
+    function updatePreviewTable() {
+      const headersRow = document.getElementById('preview-table-headers');
+      const bodyRow = document.getElementById('preview-table-body');
+      
+      headersRow.innerHTML = '';
+      bodyRow.innerHTML = '';
+
+      const mappings = getFieldMappings();
+      if (!mappings.name || !mappings.phone) {
+        document.getElementById('btn-submit-import').disabled = true;
+        document.getElementById('btn-submit-import').style.opacity = 0.5;
+      } else {
+        document.getElementById('btn-submit-import').disabled = false;
+        document.getElementById('btn-submit-import').style.opacity = 1;
+      }
+
+      // Render headers
+      const previewKeys = ['name', 'phone', 'email', 'property_interest', 'budget', 'notes', 'tags'];
+      previewKeys.forEach(k => {
+        const th = document.createElement('th');
+        th.textContent = k.replace('_', ' ').toUpperCase();
+        headersRow.appendChild(th);
+      });
+      const thStatus = document.createElement('th');
+      thStatus.textContent = 'VALIDATION STATUS';
+      headersRow.appendChild(thStatus);
+
+      // Render rows (top 5)
+      const previewRows = parsedCSV.rows.slice(0, 5);
+      previewRows.forEach(row => {
+        const tr = document.createElement('tr');
+        
+        let leadName = getCSVValueByHeader(row, mappings.name) || '';
+        let leadPhone = getCSVValueByHeader(row, mappings.phone) || '';
+        let leadEmail = getCSVValueByHeader(row, mappings.email) || '';
+        let leadProperty = getCSVValueByHeader(row, mappings.property_interest) || '';
+        let leadBudget = getCSVValueByHeader(row, mappings.budget) || '';
+        let leadNotes = getCSVValueByHeader(row, mappings.notes) || '';
+        let leadTags = getCSVValueByHeader(row, mappings.tags) || '';
+
+        const cells = [leadName, leadPhone, leadEmail, leadProperty, leadBudget, leadNotes, leadTags];
+        cells.forEach(c => {
+          const td = document.createElement('td');
+          td.textContent = c;
+          tr.appendChild(td);
+        });
+
+        // Validation column
+        const tdStatus = document.createElement('td');
+        let isValid = leadName.trim() !== '' && leadPhone.trim() !== '';
+        
+        if (isValid) {
+          tdStatus.innerHTML = `<span class="pill-badge valid">Valid</span>`;
+        } else {
+          let reason = !leadName.trim() ? 'Missing Name' : 'Missing Phone';
+          tdStatus.innerHTML = `<span class="pill-badge invalid" title="${reason}">Invalid: ${reason}</span>`;
+        }
+        tr.appendChild(tdStatus);
+
+        bodyRow.appendChild(tr);
+      });
+    }
+
+    function getFieldMappings() {
+      return {
+        name: document.getElementById('map-select-name').value,
+        phone: document.getElementById('map-select-phone').value,
+        email: document.getElementById('map-select-email').value,
+        property_interest: document.getElementById('map-select-property_interest').value,
+        budget: document.getElementById('map-select-budget').value,
+        notes: document.getElementById('map-select-notes').value,
+        tags: document.getElementById('map-select-tags').value
+      };
+    }
+
+    function getCSVValueByHeader(row, header) {
+      if (!header) return null;
+      const idx = parsedCSV.headers.indexOf(header);
+      return idx !== -1 ? row[idx] : null;
+    }
+
+    // Submit CRM Lead Imports to API
+    async function submitImportedLeads() {
+      const mappings = getFieldMappings();
+      if (!mappings.name || !mappings.phone) {
+        showToast('❌ Name and Phone column mapping is required.', 'danger');
+        return;
+      }
+
+      const formattedLeads = [];
+      const batchName = document.getElementById('import-batch-name-input').value || `Batch Import - ${Date.now()}`;
+      
+      parsedCSV.rows.forEach((row, i) => {
+        let nameVal = getCSVValueByHeader(row, mappings.name) || '';
+        let phoneVal = getCSVValueByHeader(row, mappings.phone) || '';
+        let emailVal = getCSVValueByHeader(row, mappings.email) || '';
+        let interestVal = getCSVValueByHeader(row, mappings.property_interest) || '';
+        let budgetVal = getCSVValueByHeader(row, mappings.budget) || '';
+        let notesVal = getCSVValueByHeader(row, mappings.notes) || '';
+        let tagsVal = getCSVValueByHeader(row, mappings.tags) || '';
+
+        formattedLeads.push({
+          name: nameVal,
+          phone: phoneVal,
+          email: emailVal,
+          property_interest: interestVal,
+          budget: budgetVal,
+          notes: notesVal,
+          source: 'Zillow Import',
+          tags: tagsVal ? tagsVal.split(',').map(t => t.trim()) : ['Zillow Export']
+        });
+      });
+
+      const options = {
+        batchName,
+        rollbackOnError: document.getElementById('import-opt-rollback').checked,
+        skipDuplicates: document.getElementById('import-opt-skipdup').checked
+      };
+
+      const btn = document.getElementById('btn-submit-import');
+      btn.innerText = '⏳ Processing Import...';
+      btn.disabled = true;
+
+      try {
+        const token = localStorage.getItem('zorvo_token');
+        const res = await fetch('/api/leads/import', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            agentEmail: localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com',
+            leads: formattedLeads,
+            options
+          })
+        });
+
+        const data = await res.json();
+        
+        if (!res.ok) {
+          showToast(`❌ Import Failed: ${data.error || 'Server error'}`, 'danger');
+          if (data.errors) {
+            console.error('Validation errors:', data.errors);
+          }
+          btn.innerText = '📥 Import CRM Leads';
+          btn.disabled = false;
+          return;
+        }
+
+        showToast(`🎉 Imported ${data.importedCount} leads! Duplicates Skipped: ${data.duplicatesCount}`, 'success');
+        
+        // Refresh local dashboard leads state and sync
+        await syncFromDB();
+        toggleImportArea();
+        
+        // Navigate to Leads view to show imported records
+        showPanel('leads');
+
+      } catch (err) {
+        showToast('❌ Import request failed: ' + err.message, 'danger');
+        btn.innerText = '📥 Import CRM Leads';
+        btn.disabled = false;
+      }
+    }
+
+
+    // ── CAMPAIGN WIZARD WORKFLOW ──
+    function filterWizLeads(filterType) {
+      wizSelectedFilter = filterType;
+      
+      // Get all leads from local storage
+      let leads = [];
+      try {
+        leads = JSON.parse(localStorage.getItem('pe_leads')) || [];
+      } catch (e) { leads = []; }
+
+      const rowsContainer = document.getElementById('wiz-leads-table-rows');
+      rowsContainer.innerHTML = '';
+
+      let filtered = [...leads];
+      if (filterType === 'zillow') {
+        filtered = leads.filter(l => l.source === 'Zillow Import' || (l.import_batch && l.import_batch.includes('Import')) || (l.tags && l.tags.includes('Zillow')));
+      } else if (filterType === 'cold') {
+        filtered = leads.filter(l => l.status === 'Cold' || l.status === 'New' || !l.status);
+      } else if (filterType === 'missed') {
+        filtered = leads.filter(l => l.status === 'Missed Inquiry' || (l.notes && l.notes.toLowerCase().includes('missed')));
+      }
+
+      if (filtered.length === 0) {
+        rowsContainer.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--muted)">No leads found matching criteria.</td></tr>`;
+        updateWizSelectedCount();
+        return;
+      }
+
+      filtered.forEach(lead => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid rgba(255,255,255,0.03)';
+        tr.innerHTML = `
+          <td style="padding:10px;"><input type="checkbox" class="wiz-lead-checkbox" value="${lead.id}" checked onchange="updateWizSelectedCount()"></td>
+          <td style="padding:10px; font-weight:700; color:#fff;">${lead.name}</td>
+          <td style="padding:10px;">${lead.phone}</td>
+          <td style="padding:10px; color:var(--muted); font-size:12px;">${lead.property_interest || lead.import_batch || 'CRM Lead'}</td>
+        `;
+        rowsContainer.appendChild(tr);
+      });
+
+      updateWizSelectedCount();
+    }
+
+    function toggleSelectAllWizLeads(chk) {
+      document.querySelectorAll('.wiz-lead-checkbox').forEach(cb => {
+        cb.checked = chk.checked;
+      });
+      updateWizSelectedCount();
+    }
+
+    function updateWizSelectedCount() {
+      const selected = document.querySelectorAll('.wiz-lead-checkbox:checked').length;
+      document.getElementById('wiz-selected-count-label').innerText = `${selected} Leads selected for dialing sequence.`;
+    }
+
+    function goToWizStep(step) {
+      if (step === 2 && wizActiveStep === 1) {
+        const selected = document.querySelectorAll('.wiz-lead-checkbox:checked');
+        if (selected.length === 0) {
+          showToast('❌ Select at least one lead to launch sequence.', 'warning');
+          return;
+        }
+        document.getElementById('wiz-camp-name').value = `Outreach Sequence - ${new Date().toLocaleDateString()}`;
+      }
+
+      if (step === 3 && wizActiveStep === 2) {
+        const name = document.getElementById('wiz-camp-name').value;
+        if (!name.trim()) {
+          showToast('❌ Campaign Name is required.', 'warning');
+          return;
+        }
+
+        // Populate step 3 review details
+        const selectedCount = document.querySelectorAll('.wiz-lead-checkbox:checked').length;
+        const delay = document.getElementById('wiz-camp-delay').value;
+        const tone = document.getElementById('wiz-camp-tone').options[document.getElementById('wiz-camp-tone').selectedIndex].text;
+
+        document.getElementById('wiz-review-name').innerText = name;
+        document.getElementById('wiz-review-size').innerText = `${selectedCount} Leads`;
+        document.getElementById('wiz-review-persona').innerText = tone;
+        document.getElementById('wiz-review-delay').innerText = `${delay} seconds safe spacing`;
+      }
+
+      document.getElementById('camp-wiz-step-1').style.display = step === 1 ? 'block' : 'none';
+      document.getElementById('camp-wiz-step-2').style.display = step === 2 ? 'block' : 'none';
+      document.getElementById('camp-wiz-step-3').style.display = step === 3 ? 'block' : 'none';
+      
+      wizActiveStep = step;
+    }
+
+    // Launch Sequential outreach campaign
+    async function launchOutreachCampaign() {
+      const selectedCBs = document.querySelectorAll('.wiz-lead-checkbox:checked');
+      const leadIds = Array.from(selectedCBs).map(cb => cb.value);
+
+      const campaign = {
+        name: document.getElementById('wiz-camp-name').value,
+        leads: leadIds,
+        delay: parseInt(document.getElementById('wiz-camp-delay').value),
+        tone: document.getElementById('wiz-camp-tone').value,
+        custom_instructions: document.getElementById('wiz-camp-custom-instructions').value
+      };
+
+      try {
+        const token = localStorage.getItem('zorvo_token');
+        const res = await fetch('/api/campaigns/launch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            agentEmail: localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com',
+            campaign
+          })
+        });
+
+        const data = await res.json();
+        
+        if (!res.ok) {
+          showToast('❌ Launch failed: ' + (data.error || 'Server error'), 'danger');
+          return;
+        }
+
+        showToast('🚀 Campaign successfully dispatched! Sequential dialing sequence active.', 'success');
+        closeModal('launchCampaign');
+        
+        // Immediately sync from DB to fetch updated campaigns list
+        await syncFromDB();
+        renderCampaignHistory();
+        updateCampaignHUD();
+
+      } catch (err) {
+        showToast('❌ Campaign launch error: ' + err.message, 'danger');
+      }
+    }
+
+    // Active Campaign control helpers
+    async function pauseActiveCampaign() {
+      const activeCamp = getActiveCampaign();
+      if (!activeCamp) return;
+
+      try {
+        const token = localStorage.getItem('zorvo_token');
+        const res = await fetch(`/api/campaigns/${activeCamp.id}/pause`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ agentEmail: localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com' })
+        });
+        if (res.ok) {
+          showToast('⏸ Campaign execution paused.', 'info');
+          await syncFromDB();
+          renderCampaignHistory();
+          updateCampaignHUD();
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    async function resumeActiveCampaign() {
+      // Find a paused campaign
+      let campaigns = [];
+      try { campaigns = JSON.parse(localStorage.getItem('pe_campaigns')) || []; } catch(e) {}
+      const pausedCamp = campaigns.find(c => c.status === 'paused');
+      if (!pausedCamp) return;
+
+      try {
+        const token = localStorage.getItem('zorvo_token');
+        const res = await fetch(`/api/campaigns/${pausedCamp.id}/resume`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ agentEmail: localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com' })
+        });
+        if (res.ok) {
+          showToast('▶ Resuming outreach sequence...', 'success');
+          await syncFromDB();
+          renderCampaignHistory();
+          updateCampaignHUD();
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    async function terminateActiveCampaign() {
+      const activeCamp = getActiveCampaign() || getPausedCampaign();
+      if (!activeCamp) return;
+
+      if (!confirm('Are you sure you want to terminate this Outreach sequence? This cannot be undone.')) return;
+
+      try {
+        let campaigns = [];
+        try { campaigns = JSON.parse(localStorage.getItem('pe_campaigns')) || []; } catch(e) {}
+        const camp = campaigns.find(c => c.id === activeCamp.id);
+        if (camp) {
+          camp.status = 'completed';
+          camp.updated_at = new Date().toISOString();
+          localStorage.setItem('pe_campaigns', JSON.stringify(campaigns));
+          showToast('🛑 Campaign terminated.', 'danger');
+          syncToDB();
+          renderCampaignHistory();
+          updateCampaignHUD();
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function getActiveCampaign() {
+      let campaigns = [];
+      try { campaigns = JSON.parse(localStorage.getItem('pe_campaigns')) || []; } catch(e) {}
+      return campaigns.find(c => c.status === 'running');
+    }
+
+    function getPausedCampaign() {
+      let campaigns = [];
+      try { campaigns = JSON.parse(localStorage.getItem('pe_campaigns')) || []; } catch(e) {}
+      return campaigns.find(c => c.status === 'paused');
+    }
+
+    // Render Campaign list in UI
+    function renderCampaignHistory() {
+      let campaigns = [];
+      try { campaigns = JSON.parse(localStorage.getItem('pe_campaigns')) || []; } catch(e) {}
+      
+      const rowsContainer = document.getElementById('campaign-history-rows');
+      const emptyContainer = document.getElementById('campaign-history-empty');
+      
+      rowsContainer.innerHTML = '';
+
+      if (campaigns.length === 0) {
+        emptyContainer.style.display = 'block';
+        return;
+      }
+      emptyContainer.style.display = 'none';
+
+      campaigns.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border)';
+        tr.style.fontSize = '13px';
+
+        const totalLeads = c.leads.length;
+        const currentIdx = c.currentLeadIndex || 0;
+        const pct = Math.min(Math.round((currentIdx / totalLeads) * 100), 100);
+
+        // Outcome summary
+        const metrics = c.metrics || { bookings: 0, followups: 0, failed: 0, noAnswer: 0 };
+        const outcomeSummary = `
+          <div style="font-size:11px;">
+            <span style="color:var(--green); font-weight:700;">Appointments: ${metrics.bookings}</span><br>
+            <span style="color:var(--blue);">Follow-ups: ${metrics.followups}</span><br>
+            <span style="color:var(--red);">No Answer/Busy: ${metrics.noAnswer}</span>
+          </div>
+        `;
+
+        let statusClass = 'pill-badge valid';
+        if (c.status === 'running') statusClass = 'pill-badge valid pulse-green';
+        else if (c.status === 'paused') statusClass = 'pill-badge invalid';
+        else if (c.status === 'completed') statusClass = 'pill-badge valid';
+
+        // Action buttons
+        let actions = '';
+        if (c.status === 'paused') {
+          actions = `<button class="btn btn-secondary" onclick="resumeActiveCampaign()" style="padding: 4px 8px; font-size:11px;">▶ Resume</button>`;
+        } else if (c.status === 'running') {
+          actions = `<button class="btn btn-secondary" onclick="pauseActiveCampaign()" style="padding: 4px 8px; font-size:11px;">⏸ Pause</button>`;
+        } else {
+          actions = `<span style="color:var(--muted); font-style:italic;">Sequence Completed</span>`;
+        }
+
+        tr.innerHTML = `
+          <td style="padding: 12px 8px;">
+            <div style="font-weight: 700; color:#fff;">${c.name}</div>
+            <div style="font-size: 11px; color:var(--muted);">Tone: ${c.tone} | Delay: ${c.delay}s</div>
+          </td>
+          <td style="padding: 12px 8px;">
+            <span class="${statusClass}" style="text-transform: capitalize;">${c.status}</span>
+          </td>
+          <td style="padding: 12px 8px; width: 160px;">
+            <div style="font-size:11px; margin-bottom: 4px;">${currentIdx} / ${totalLeads} Leads (${pct}%)</div>
+            <div class="progress-track" style="margin: 0; height: 6px;">
+              <div class="progress-bar-fill" style="width: ${pct}%;"></div>
+            </div>
+          </td>
+          <td style="padding: 12px 8px;">${outcomeSummary}</td>
+          <td style="padding: 12px 8px; color:var(--muted); font-size:11px;">${new Date(c.created_at).toLocaleString()}</td>
+          <td style="padding: 12px 8px; text-align: right;">${actions}</td>
+        `;
+
+        rowsContainer.appendChild(tr);
+      });
+    }
+
+    // Refresh HUD metrics & active panels
+    function updateCampaignHUD() {
+      const active = getActiveCampaign();
+      const paused = getPausedCampaign();
+      
+      const hudStatus = document.getElementById('camp-hud-status');
+      const hudSub = document.getElementById('camp-hud-sub');
+      const hudCalled = document.getElementById('camp-hud-called');
+      const hudCompleted = document.getElementById('camp-hud-completed');
+      const hudBookings = document.getElementById('camp-hud-bookings');
+      const hudBookingsSub = document.getElementById('camp-hud-bookings-sub');
+      const hudFailed = document.getElementById('camp-hud-failed');
+      const hudFailedSub = document.getElementById('camp-hud-failed-sub');
+      
+      const activeMonitor = document.getElementById('active-campaign-monitor');
+      const activeName = document.getElementById('active-camp-name');
+      const activeProgress = document.getElementById('active-camp-progress-label');
+      const activeProgressFill = document.getElementById('active-camp-progress-bar');
+      const activePauseBtn = document.getElementById('active-camp-pause-btn');
+      const activeResumeBtn = document.getElementById('active-camp-resume-btn');
+      const activeTickerTarget = document.getElementById('active-camp-ticker-target');
+      const activeTickerStatus = document.getElementById('active-camp-ticker-status');
+
+      let currentCamp = active || paused || null;
+
+      if (currentCamp) {
+        hudStatus.innerText = currentCamp.status.toUpperCase();
+        hudStatus.style.color = currentCamp.status === 'running' ? 'var(--green)' : 'var(--red)';
+        hudSub.innerText = currentCamp.name;
+
+        // Metrics calculations
+        const metrics = currentCamp.metrics || { called: 0, completed: 0, bookings: 0, failed: 0, noAnswer: 0 };
+        hudCalled.innerText = metrics.called || currentCamp.currentLeadIndex || 0;
+        hudCompleted.innerText = metrics.completed || 0;
+        hudBookings.innerText = metrics.bookings || 0;
+        
+        const total = currentCamp.leads.length;
+        const convRate = total > 0 ? Math.round((metrics.bookings / total) * 100) : 0;
+        hudBookingsSub.innerText = `${convRate}% target qualification rate`;
+
+        const failRate = total > 0 ? Math.round((metrics.noAnswer / total) * 100) : 0;
+        hudFailed.innerText = `${failRate}%`;
+        hudFailedSub.innerText = `${metrics.noAnswer || 0} unanswered calls`;
+
+        // Active Monitor
+        activeMonitor.style.display = 'block';
+        activeName.innerText = currentCamp.name;
+        
+        const currentIdx = currentCamp.currentLeadIndex || 0;
+        const pct = Math.round((currentIdx / total) * 100);
+        activeProgress.innerText = `${currentIdx} / ${total} Leads (${pct}%)`;
+        activeProgressFill.style.width = `${pct}%`;
+
+        if (currentCamp.status === 'running') {
+          activePauseBtn.style.display = 'inline-block';
+          activeResumeBtn.style.display = 'none';
+          
+          // Get next call target details
+          if (currentIdx < total) {
+            const nextLeadId = currentCamp.leads[currentIdx];
+            let leads = [];
+            try { leads = JSON.parse(localStorage.getItem('pe_leads')) || []; } catch(e) {}
+            const nextLead = leads.find(l => l.id === nextLeadId);
+            if (nextLead) {
+              activeTickerTarget.innerText = `${nextLead.name} (${nextLead.phone})`;
+              activeTickerStatus.innerText = 'DIALING';
+              activeTickerStatus.style.background = 'rgba(46, 204, 138, 0.1)';
+              activeTickerStatus.style.color = 'var(--green)';
+            }
+          } else {
+            activeTickerTarget.innerText = 'Completed outreach dialing.';
+            activeTickerStatus.innerText = 'DONE';
+          }
+        } else {
+          activePauseBtn.style.display = 'none';
+          activeResumeBtn.style.display = 'inline-block';
+          activeTickerTarget.innerText = 'Outreach sequence currently paused.';
+          activeTickerStatus.innerText = 'PAUSED';
+          activeTickerStatus.style.background = 'rgba(224, 80, 96, 0.1)';
+          activeTickerStatus.style.color = 'var(--red)';
+        }
+
+      } else {
+        hudStatus.innerText = 'INACTIVE';
+        hudStatus.style.color = 'var(--muted)';
+        hudSub.innerText = 'No campaigns triggered today';
+        hudCalled.innerText = '0';
+        hudCompleted.innerText = '0';
+        hudBookings.innerText = '0';
+        hudBookingsSub.innerText = '0% conversion rate';
+        hudFailed.innerText = '0%';
+        hudFailedSub.innerText = '0 unanswered calls';
+
+        activeMonitor.style.display = 'none';
+      }
+    }
+
+    // Start polling campaigns state for real-time visual progress
+    function startCampaignPolling() {
+      setInterval(() => {
+        const active = getActiveCampaign();
+        if (active) {
+          console.log('[POLL] Active Campaign sequence running. Refreshing progress.');
+          // Sync from DB will automatically sync DB changes back to localStorage!
+          syncFromDB().then(() => {
+            renderCampaignHistory();
+            updateCampaignHUD();
+          });
+        }
+      }, 4000);
+    }
 
     // ================================================================
     // UI HELPERS
@@ -10558,7 +11893,7 @@ ${date}`;
         properties: 'Property Listings', map: 'Map View', bookings: 'Confirmed Appointments', 
         marketing: 'Marketing Tools', ai: 'AI Tools', analytics: 'Analytics', 
         team: 'Team', notifications: 'Notifications', settings: 'Settings', 
-        documents: '🗂️ Documents Vault' 
+        documents: '🗂️ Documents Vault', campaigns: 'AI Outreach Campaigns'
       };
       
       const displayTitle = titles[name] || name.charAt(0).toUpperCase() + name.slice(1);
@@ -10568,7 +11903,13 @@ ${date}`;
       if (tDesk) tDesk.textContent = displayTitle;
       if (tMob) tMob.textContent = displayTitle;
 
-      const ctas = { leads: '+ Add Lead', properties: '+ Add Listing', bookings: '+ Schedule Tour', dashboard: '+ Add Lead' };
+      const ctas = { 
+        leads: '+ Add Lead', 
+        properties: '+ Add Listing', 
+        bookings: '+ Schedule Tour', 
+        dashboard: '+ Add Lead',
+        campaigns: '🚀 Launch AI Campaign'
+      };
       const cta = document.getElementById('main-cta');
       if (cta) {
         if (ctas[name]) { 
@@ -10578,6 +11919,7 @@ ${date}`;
             if (name === 'leads' || name === 'dashboard') openModal('addLead'); 
             else if (name === 'properties') openAddPropertyModal(); 
             else if (name === 'bookings') openModal('addBooking'); 
+            else if (name === 'campaigns') openModal('launchCampaign');
           }; 
         } else {
           cta.style.display = 'none';
@@ -10588,6 +11930,11 @@ ${date}`;
       if (name === 'bookings' || name === 'marketing') populateBookingProps();
       if (name === 'settings') { renderSettings(); renderIntegrations(); }
       if (name === 'documents') { loadDocuments(); loadAgreements(); }
+      if (name === 'campaigns') {
+        renderCampaignHistory();
+        updateCampaignHUD();
+        filterWizLeads('all');
+      }
 
       const huds = document.querySelectorAll('.hud-metrics');
       huds.forEach(hud => {

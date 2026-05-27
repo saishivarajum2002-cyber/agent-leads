@@ -83,13 +83,14 @@ YOUR GOAL:
       name:   lead.name || 'Lead',
     },
     metadata: {
-      leadId:   lead.id       || null,
-      agentId:  lead.agent_id || lead.agent_email || null,
-      teamId:   lead.team_id  || null,
-      phone:    lead.phone,
-      email:    lead.email    || null,
-      interest: lead.property_interest || null,
-      budget:   lead.budget   || null,
+      leadId:     lead.id       || null,
+      agentId:    lead.agent_id || lead.agent_email || null,
+      teamId:     lead.team_id  || null,
+      phone:      lead.phone,
+      email:      lead.email    || null,
+      interest:   lead.property_interest || null,
+      budget:     lead.budget   || null,
+      campaignId: lead.campaign_id || (lead.metadata && lead.metadata.campaignId) || null,
     },
   };
 
@@ -251,6 +252,16 @@ YOUR CALL GOALS:
 6. Book a physical visit for them — ask for their preferred date and time.
    - CURRENT DATE: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
    - RULE: When calling bookVisit, you MUST convert relative dates (like "tomorrow" or "Friday") into absolute YYYY-MM-DD format based on CURRENT DATE.
+7. Confirm Visit Verbally BEFORE calling 'bookVisit':
+   Once they pick a date, time, and provide their email, you MUST repeat the details back:
+   "Just to confirm, I have your visit scheduled for [Property Name] on [Date] at [Time], and your email registered as [Email]. Is that correct?"
+   ONLY after they say "Yes" or confirm, you may execute the 'bookVisit' tool to save the booking!
+8. Backend Success Verification:
+   NEVER verbally confirm booking success before the tool call completes.
+   If the tool call returns success, say: "Fantastic! Your booking is successfully confirmed. You'll receive a confirmation email with details shortly."
+   If the tool call returns a validation error (e.g. invalid email or date format), explain the issue to the caller naturally:
+   "It looks like there's a slight issue with that email. Let me verify it again — could you repeat the email address for me?"
+   Then recollect the failed field and re-call the 'bookVisit' tool with corrected values.
 
 YOUR RULES:
 - Max 2-3 SHORT sentences per reply.
@@ -271,10 +282,16 @@ YOUR RULES:
             type: 'object',
             properties: {
               visit_date:        { type: 'string', description: 'Visit date in YYYY-MM-DD format' },
-              visit_time:        { type: 'string', description: 'Visit time e.g. "11:00 AM"' },
+              visit_time:        { type: 'string', description: 'Visit time e.g. "17:00" or "11:00 AM"' },
               property_interest: { type: 'string', description: 'Property name or type' },
+              client_name:       { type: 'string', description: 'The client\'s full name' },
+              client_email:      { type: 'string', description: 'Spoken/written email address' },
+              client_phone:      { type: 'string', description: 'Client\'s mobile phone number' },
+              budget:            { type: 'string', description: 'Client\'s stated budget' },
+              lead_type:         { type: 'string', description: 'Type of client, e.g. "buyer" or "renter"' },
+              preferred_area:    { type: 'string', description: 'Preferred area / location' }
             },
-            required: ['visit_date', 'visit_time'],
+            required: ['visit_date', 'visit_time', 'client_name', 'client_email'],
           },
         },
         {
