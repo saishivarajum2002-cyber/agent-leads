@@ -5355,7 +5355,10 @@
               <h3 style="font-size: 20px; font-weight: 800; color: #fff; margin-top: 6px;" id="active-camp-name">Zillow Lead Outbound Activation</h3>
             </div>
             
-            <div style="display: flex; gap: 10px;">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button class="btn btn-secondary" onclick="simulateNextCampaignCall()" style="padding: 6px 14px; font-size: 13px; background: rgba(46, 204, 138, 0.1); border: 1px solid rgba(46, 204, 138, 0.35); color: var(--green); font-weight: bold;">
+                ⚡ Simulate Next Call
+              </button>
               <button class="btn btn-secondary" id="active-camp-pause-btn" onclick="pauseActiveCampaign()" style="padding: 6px 14px; font-size: 13px;">
                 ⏸ Pause
               </button>
@@ -7009,6 +7012,20 @@
   <div class="toast-wrap" id="toast-wrap"></div>
 
   <script>
+    // ================================================================
+    // fetch interceptor for file:// protocol support
+    // ================================================================
+    (function() {
+      const originalFetch = window.fetch;
+      window.fetch = function(input, init) {
+        if (typeof input === 'string' && input.startsWith('/api/')) {
+          const base = window.location.protocol === 'file:' ? 'http://localhost:5000' : '';
+          input = base + input;
+        }
+        return originalFetch(input, init);
+      };
+    })();
+
     // ================================================================
     // PROPEDGE LOCALSTORAGE DATABASE ENGINE
     // All data stored in localStorage — works fully offline, no server
@@ -11699,6 +11716,83 @@ ${date}`;
       let campaigns = [];
       try { campaigns = JSON.parse(localStorage.getItem('pe_campaigns')) || []; } catch(e) {}
       return campaigns.find(c => c.status === 'paused');
+    }
+
+    // ── Simulate end-of-call webhook to advance the sequential campaign ────────
+    // Useful for local testing & demos — fires the same path as a real VAPI call ending
+    async function simulateNextCampaignCall() {
+      const activeCamp = getActiveCampaign();
+      if (!activeCamp) {
+        showToast('ℹ️ No active campaign running.', 'info');
+        return;
+      }
+
+      const currentIdx = activeCamp.currentLeadIndex || 0;
+      const total = activeCamp.leads.length;
+
+      if (currentIdx >= total) {
+        showToast('✅ Campaign already fully completed!', 'info');
+        return;
+      }
+
+      // Get the CURRENT lead being called (currentLeadIndex = the one in progress)
+      const currentLeadId = activeCamp.leads[currentIdx];
+      let leads = DB.getAll('pe_leads');
+      const lead = leads.find(l => l.id === currentLeadId) || {};
+
+      showToast(`⚡ Simulating call ended for ${lead.name || 'lead ' + (currentIdx + 1)}...`, 'info');
+
+      // Disable button briefly to prevent double-fire
+      const btn = document.querySelector('[onclick="simulateNextCampaignCall()"]');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Simulating...'; }
+
+      try {
+        const res = await fetch('/api/vapi/webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'end-of-call-report',
+            message: {
+              type: 'end-of-call-report',
+              call: {
+                customer: {
+                  number: lead.phone || '+15551234567',
+                  name:   lead.name  || 'Simulated Lead'
+                },
+                metadata: {
+                  campaignId: activeCamp.id,
+                  leadId:     lead.id   || currentLeadId,
+                  phone:      lead.phone || '',
+                  email:      lead.email || '',
+                  interest:   lead.property_interest || '',
+                  budget:     lead.budget || ''
+                }
+              },
+              transcript:   `Hi ${lead.name || 'there'}, I am interested in viewing properties. Please schedule a visit. Thank you.`,
+              recordingUrl: 'https://vapi.ai/mock-recording.mp3',
+              endedReason:  'customer-hung-up',
+              durationSeconds: 38
+            }
+          })
+        });
+
+        if (res.ok) {
+          showToast(`✅ Simulated! Campaign advancing to lead ${currentIdx + 2} of ${total}...`, 'success');
+          // Give backend ~1.5s to update MongoDB then re-sync
+          setTimeout(async () => {
+            await syncFromDB();
+            renderCampaignHistory();
+            updateCampaignHUD();
+          }, 1500);
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast('❌ Simulation failed: ' + (err.error || res.status), 'danger');
+        }
+      } catch (e) {
+        showToast('❌ Simulation error: ' + e.message, 'danger');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ Simulate Next Call'; }
+      }
     }
 
     // Render Campaign list in UI
