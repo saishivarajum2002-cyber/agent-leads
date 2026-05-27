@@ -11433,15 +11433,14 @@ ${date}`;
       btn.disabled = true;
 
       try {
-        const token = localStorage.getItem('zorvo_token');
         const res = await fetch('/api/leads/import', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'x-api-secret': 'propedge_secret_2026'
           },
           body: JSON.stringify({
-            agentEmail: localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com',
+            agentEmail: state.agent?.email || localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com',
             leads: formattedLeads,
             options
           })
@@ -11571,45 +11570,57 @@ ${date}`;
       const selectedCBs = document.querySelectorAll('.wiz-lead-checkbox:checked');
       const leadIds = Array.from(selectedCBs).map(cb => cb.value);
 
+      if (leadIds.length === 0) {
+        showToast('⚠️ Please select at least one lead to call.', 'warning');
+        return;
+      }
+
       const campaign = {
-        name: document.getElementById('wiz-camp-name').value,
+        name: document.getElementById('wiz-camp-name')?.value || ('Outreach Sequence — ' + new Date().toLocaleDateString()),
         leads: leadIds,
-        delay: parseInt(document.getElementById('wiz-camp-delay').value),
-        tone: document.getElementById('wiz-camp-tone').value,
-        custom_instructions: document.getElementById('wiz-camp-custom-instructions').value
+        delay: parseInt(document.getElementById('wiz-camp-delay')?.value || '5'),
+        tone: document.getElementById('wiz-camp-tone')?.value || 'friendly',
+        custom_instructions: document.getElementById('wiz-camp-custom-instructions')?.value || ''
       };
 
+      // Disable button and show loading
+      const btn = document.querySelector('[onclick="launchOutreachCampaign()"]');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Launching...'; }
+
       try {
-        const token = localStorage.getItem('zorvo_token');
         const res = await fetch('/api/campaigns/launch', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'x-api-secret': 'propedge_secret_2026'
           },
           body: JSON.stringify({
-            agentEmail: localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com',
+            agentEmail: state.agent?.email || localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com',
             campaign
           })
         });
 
         const data = await res.json();
-        
+
         if (!res.ok) {
           showToast('❌ Launch failed: ' + (data.error || 'Server error'), 'danger');
           return;
         }
 
-        showToast('🚀 Campaign successfully dispatched! Sequential dialing sequence active.', 'success');
+        showToast('🚀 Campaign dispatched! AI is now dialing ' + leadIds.length + ' leads sequentially.', 'success');
         closeModal('launchCampaign');
-        
-        // Immediately sync from DB to fetch updated campaigns list
-        await syncFromDB();
-        renderCampaignHistory();
-        updateCampaignHUD();
+
+        // Immediately sync to show new campaign in HUD
+        syncFromDB().then(() => {
+          renderCampaignHistory();
+          updateCampaignHUD();
+          startCampaignPolling();
+        });
 
       } catch (err) {
         showToast('❌ Campaign launch error: ' + err.message, 'danger');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🚀 Dispatch Campaign Now'; }
       }
     }
 
@@ -11619,46 +11630,39 @@ ${date}`;
       if (!activeCamp) return;
 
       try {
-        const token = localStorage.getItem('zorvo_token');
         const res = await fetch(`/api/campaigns/${activeCamp.id}/pause`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'x-api-secret': 'propedge_secret_2026'
           },
-          body: JSON.stringify({ agentEmail: localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com' })
+          body: JSON.stringify({ agentEmail: state.agent?.email || 'saishivaraju.m2002@gmail.com' })
         });
         if (res.ok) {
           showToast('⏸ Campaign execution paused.', 'info');
-          await syncFromDB();
-          renderCampaignHistory();
-          updateCampaignHUD();
+          syncFromDB().then(() => { renderCampaignHistory(); updateCampaignHUD(); });
         }
       } catch (e) { console.error(e); }
     }
 
     async function resumeActiveCampaign() {
       // Find a paused campaign
-      let campaigns = [];
-      try { campaigns = JSON.parse(localStorage.getItem('pe_campaigns')) || []; } catch(e) {}
+      let campaigns = DB.getAll('pe_campaigns');
       const pausedCamp = campaigns.find(c => c.status === 'paused');
       if (!pausedCamp) return;
 
       try {
-        const token = localStorage.getItem('zorvo_token');
         const res = await fetch(`/api/campaigns/${pausedCamp.id}/resume`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'x-api-secret': 'propedge_secret_2026'
           },
-          body: JSON.stringify({ agentEmail: localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com' })
+          body: JSON.stringify({ agentEmail: state.agent?.email || 'saishivaraju.m2002@gmail.com' })
         });
         if (res.ok) {
           showToast('▶ Resuming outreach sequence...', 'success');
-          await syncFromDB();
-          renderCampaignHistory();
-          updateCampaignHUD();
+          syncFromDB().then(() => { renderCampaignHistory(); updateCampaignHUD(); });
         }
       } catch (e) { console.error(e); }
     }
