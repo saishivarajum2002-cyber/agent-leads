@@ -2616,27 +2616,25 @@ async function executeCampaignStep(campaignId, leadId, isFailed, endedReason, du
       const nextLead = leadsList.find(l => l.id === nextLeadId);
 
       if (nextLead) {
-        console.log(`⏰ Campaign sequential calling: Waiting 5 seconds before triggering next call to ${nextLead.name}`);
-
         campaign.metrics.called = (campaign.metrics.called || 0) + 1;
 
+        // ── Save state FIRST, then fire next call (no setTimeout — Vercel safe)
         snapshot.data.pe_campaigns = wasString ? JSON.stringify(campaigns) : campaigns;
         snapshot.markModified('data');
         await snapshot.save();
 
-        setTimeout(() => {
-          console.log(`🚀 [Sequential Calling] Dispatching call to ${nextLead.name} (${nextLead.phone})`);
-          const leadWithMeta = {
-            ...nextLead,
-            campaign_id: campaignId,
-            metadata: {
-              campaignId: campaignId,
-              leadId: nextLead.id,
-              phone: nextLead.phone
-            }
-          };
-          triggerAICall(leadWithMeta).catch(err => console.error('Sequential trigger failed:', err.message));
-        }, 5000);
+        console.log(`🚀 [Sequential Calling] Dispatching call to ${nextLead.name} (${nextLead.phone})`);
+        const leadWithMeta = {
+          ...nextLead,
+          campaign_id: campaignId,
+          metadata: {
+            campaignId: campaignId,
+            leadId: nextLead.id,
+            phone: nextLead.phone
+          }
+        };
+        // Fire-and-forget — the next end-of-call-report will advance the campaign again
+        triggerAICall(leadWithMeta).catch(err => console.error('Sequential trigger failed:', err.message));
         return;
       } else {
         console.warn(`⚠️ Lead ${nextLeadId} not found in CRM leads list.`);
@@ -3217,7 +3215,7 @@ Please check the market and contact them within 5 hours.
       });
 
       if ((isFailed || duration < 10) && phone) {
-        console.log(`⚠️  Detected call failure/no-answer for ${phone} (Reason: ${endedReason}). Scheduling retries.`);
+        console.log(`⚠️  Detected call failure/no-answer for ${phone} (Reason: ${endedReason}). Queuing persistent retry.`);
         const leadMeta = { 
           phone, 
           name: call.customer?.name, 
@@ -3226,7 +3224,8 @@ Please check the market and contact them within 5 hours.
           property_interest: metadata.interest || '',
           budget: metadata.budget || ''
         };
-        scheduleRetry(leadMeta, triggerAICall, triggerFailoverMessages);
+        // Use MongoDB-backed retry queue (survives Vercel cold-starts)
+        queueNoAnswerRetry(leadMeta).catch(e => console.error('queueNoAnswerRetry error:', e.message));
       }
 
       // ── Schedule email follow-ups after call ends (Day 0 instant, 1, 2, 3)
@@ -3260,6 +3259,164 @@ Please check the market and contact them within 5 hours.
 
   } catch (err) {
     console.error('VAPI webhook processing error:', err.message);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CRON ENDPOINTS (triggered by Vercel Cron — see vercel.json)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── MongoDB model for persistent no-answer retry queue ────────────────────────
+const RetryQueueSchema = new mongoose.Schema({
+  phone:             { type: String, required: true, unique: true },
+  name:              { type: String, default: '' },
+  email:             { type: String, default: '' },
+  lead_id:           { type: String, default: null },
+  property_interest: { type: String, default: '' },
+  budget:            { type: String, default: '' },
+  attempts:          { type: Number, default: 0 },
+  max_attempts:      { type: Number, default: 2 },
+  next_retry_at:     { type: Date, required: true },
+  status:            { type: String, default: 'pending' }, // pending | completed | failed
+  created_at:        { type: Date, default: Date.now }
+}, { timestamps: true });
+
+const RetryQueue = mongoose.models.RetryQueue || mongoose.model('RetryQueue', RetryQueueSchema);
+
+/**
+ * Schedule a no-answer retry in MongoDB (Vercel-safe, survives cold-starts)
+ * Delays: attempt 0 → +5min, attempt 1 → +30min, attempt 2+ → failover email
+ */
+async function queueNoAnswerRetry(lead) {
+  const phone = lead.phone;
+  if (!phone) return;
+
+  const RETRY_DELAYS_MS = [5 * 60 * 1000, 30 * 60 * 1000]; // 5m, 30m
+
+  try {
+    await connectDB();
+    const existing = await RetryQueue.findOne({ phone, status: 'pending' });
+    const attempts = existing ? existing.attempts : 0;
+
+    if (attempts >= 2) {
+      console.log(`⛔ Max retries reached for ${phone} — triggering failover email`);
+      await RetryQueue.updateOne({ phone }, { status: 'failed' }).catch(() => {});
+      await triggerFailoverMessages(lead);
+      return;
+    }
+
+    const delayMs = RETRY_DELAYS_MS[attempts] || RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
+    const nextRetryAt = new Date(Date.now() + delayMs);
+
+    await RetryQueue.findOneAndUpdate(
+      { phone },
+      {
+        name: lead.name || '',
+        email: lead.email || '',
+        lead_id: lead.id || null,
+        property_interest: lead.property_interest || '',
+        budget: lead.budget || '',
+        attempts,
+        max_attempts: 2,
+        next_retry_at: nextRetryAt,
+        status: 'pending'
+      },
+      { upsert: true, new: true }
+    );
+
+    const mins = Math.round(delayMs / 60000);
+    console.log(`🔁 Queued retry ${attempts + 1}/2 for ${phone} at ${nextRetryAt.toISOString()} (in ${mins} min)`);
+  } catch (err) {
+    console.error('queueNoAnswerRetry error:', err.message);
+  }
+}
+
+// ── GET /api/drip — Email Drip Cron (runs every 6 hours via Vercel Cron) ──────
+app.get('/api/drip', async (req, res) => {
+  // Secure: Vercel Cron sends Authorization: Bearer <CRON_SECRET> or just check env
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    await connectDB();
+    const { processFollowUpDrip } = require('../services/followup');
+    await processFollowUpDrip();
+    console.log('✅ [CRON] Drip engine run complete');
+    res.json({ success: true, message: 'Drip engine processed', ts: new Date().toISOString() });
+  } catch (err) {
+    console.error('❌ [CRON] Drip engine error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/retry-queue — No-Answer Retry Cron (runs every 5 min) ───────────
+app.get('/api/retry-queue', async (req, res) => {
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    await connectDB();
+    const now = new Date();
+    const due = await RetryQueue.find({ status: 'pending', next_retry_at: { $lte: now } });
+
+    console.log(`🔁 [CRON] Retry queue: ${due.length} leads due for retry`);
+
+    let fired = 0;
+    let failedOver = 0;
+
+    for (const entry of due) {
+      const lead = {
+        phone: entry.phone,
+        name: entry.name,
+        id: entry.lead_id,
+        email: entry.email,
+        property_interest: entry.property_interest,
+        budget: entry.budget
+      };
+
+      if (entry.attempts >= entry.max_attempts) {
+        console.log(`⛔ Max retries hit for ${entry.phone} — failover email`);
+        await triggerFailoverMessages(lead);
+        await RetryQueue.updateOne({ _id: entry._id }, { status: 'failed' });
+        failedOver++;
+        continue;
+      }
+
+      const RETRY_DELAYS_MS = [5 * 60 * 1000, 30 * 60 * 1000];
+      const nextAttempt = entry.attempts + 1;
+      const delayMs = RETRY_DELAYS_MS[nextAttempt] || RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
+      const nextRetryAt = new Date(Date.now() + delayMs);
+
+      console.log(`📞 [CRON] Retrying call to ${entry.name} (${entry.phone}) — attempt ${nextAttempt}`);
+      const result = await triggerAICall(lead);
+
+      if (result.success) {
+        fired++;
+        if (nextAttempt >= entry.max_attempts) {
+          await RetryQueue.updateOne({ _id: entry._id }, { status: 'completed', attempts: nextAttempt });
+        } else {
+          await RetryQueue.updateOne({ _id: entry._id }, { attempts: nextAttempt, next_retry_at: nextRetryAt });
+        }
+      } else {
+        console.warn(`⚠️ Retry call failed for ${entry.phone}:`, result.error);
+        if (nextAttempt >= entry.max_attempts) {
+          await triggerFailoverMessages(lead);
+          await RetryQueue.updateOne({ _id: entry._id }, { status: 'failed', attempts: nextAttempt });
+          failedOver++;
+        } else {
+          await RetryQueue.updateOne({ _id: entry._id }, { attempts: nextAttempt, next_retry_at: nextRetryAt });
+        }
+      }
+    }
+
+    res.json({ success: true, fired, failedOver, processed: due.length, ts: now.toISOString() });
+  } catch (err) {
+    console.error('❌ [CRON] Retry queue error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

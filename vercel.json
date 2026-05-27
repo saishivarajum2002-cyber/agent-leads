@@ -4,5 +4,9 @@
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/auth/(.*)", "destination": "/api/index.js" },
     { "source": "/(.*)", "destination": "/$1" }
+  ],
+  "crons": [
+    { "path": "/api/drip", "schedule": "0 */6 * * *" },
+    { "path": "/api/retry-queue", "schedule": "*/5 * * * *" }
   ]
 }
