@@ -89,15 +89,26 @@ function normalizeSpokenPhone(phoneStr) {
     cleaned = cleaned.replace(regex, digitWords[word]);
   });
 
-  // Remove non-digit characters except the leading plus
+  // Check if it has a leading plus
   const hasPlus = cleaned.startsWith('+');
+
+  // Remove non-digit characters
   cleaned = cleaned.replace(/\D/g, '');
   
   if (hasPlus) {
     cleaned = '+' + cleaned;
   } else {
-    // Default country prefix prefixing rules could go here if needed
-    cleaned = '+' + cleaned;
+    // Intelligent country code prepending
+    if (cleaned.length === 10) {
+      // 10-digit US number -> prepend +1
+      cleaned = '+1' + cleaned;
+    } else if (cleaned.length === 11 && cleaned.startsWith('1')) {
+      // 11-digit US number starting with 1 -> prepend +
+      cleaned = '+' + cleaned;
+    } else if (cleaned.length > 0) {
+      // Other numbers -> default to prepending +
+      cleaned = '+' + cleaned;
+    }
   }
 
   return cleaned;

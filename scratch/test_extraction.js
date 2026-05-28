@@ -60,6 +60,21 @@ assertEqual(
   '+14135551234',
   'Phone spelled out in words'
 );
+assertEqual(
+  normalizeSpokenPhone('7542917462'),
+  '+17542917462',
+  '10-digit US number auto-prefixes +1'
+);
+assertEqual(
+  normalizeSpokenPhone('17542917462'),
+  '+17542917462',
+  '11-digit US number starting with 1 auto-prefixes +'
+);
+assertEqual(
+  normalizeSpokenPhone('+919876543210'),
+  '+919876543210',
+  'International number retains leading plus and digits'
+);
 
 // 3. Time Normalization Tests
 console.log('\n--- ⏰ Spoken Time Normalization Tests ---');

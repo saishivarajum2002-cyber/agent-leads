@@ -6,7 +6,26 @@ const path = require('path');
 const crypto = require('crypto');
 
 const app = express();
-app.use(cors());
+
+// ── CORS: whitelist production + local dev ─────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://anizorvo.vercel.app',
+  'https://anizorvo.vercel.app/',
+  'http://localhost:5000',
+  'http://localhost:3000',
+  'http://127.0.0.1:5000',
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, mobile apps, Vercel cron, VAPI webhooks)
+    if (!origin) return callback(null, true);
+    // Allow file:// (local dashboard)
+    if (origin === 'null') return callback(null, true);
+    if (ALLOWED_ORIGINS.some(o => origin.startsWith(o))) return callback(null, true);
+    callback(null, true); // keep permissive for now — tighten after custom domain
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, '..')));
 
@@ -2007,8 +2026,18 @@ app.post('/api/ai/chat', async (req, res) => {
 
   } catch (err) {
     console.error('Gemini chat error:', err.message);
+    // Graceful fallback — 429 quota hit or any other Gemini error
+    const is429 = err.message && (err.message.includes('429') || err.message.includes('quota'));
+    const fallbackReplies = [
+      "That's great to hear! Could you share more about the type of property you're looking for?",
+      "I understand! Let me help you find the perfect property. What's your budget range?",
+      "Absolutely! We have some excellent options. Are you looking for something ready to move in or under construction?",
+      "I'd love to help you with that! What area or location are you most interested in?",
+    ];
+    const fallback = fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
+    if (is429) console.warn('⚠️ Gemini free-tier quota exceeded — using fallback response');
     res.json({
-      reply: "I totally understand! Could you tell me a bit more about what you are looking for?",
+      reply: fallback,
       nextState: state,
       lead: session.leadData || lead,
       action: null
@@ -2429,16 +2458,48 @@ app.post('/api/campaigns/launch', protect, async (req, res) => {
         }
       };
 
-      triggerAICall(leadWithMeta).catch(err => {
-        console.error(`❌ Campaign first call trigger failed for ${lead.name}:`, err.message);
-      });
+      try {
+        const callResult = await triggerAICall(leadWithMeta);
+        if (!callResult || !callResult.success) {
+          console.error(`❌ Campaign first call trigger failed for ${lead.name}: ${callResult?.error || 'Unknown error'}`);
+          
+          newCampaign.metrics.failed = 1;
+          newCampaign.outcomes = newCampaign.outcomes || {};
+          newCampaign.outcomes[firstLeadId] = 'failed to initiate';
+          
+          snapshot.data.pe_campaigns = typeof snapshot.data.pe_campaigns === 'string' ? JSON.stringify(campaigns) : campaigns;
+          snapshot.markModified('data');
+          await snapshot.save();
 
-      newCampaign.metrics.called = 1;
+          // Trigger skip to next lead immediately!
+          executeCampaignStep(campId, firstLeadId, true, 'api-trigger-failure', 0, 'API Trigger Failure', null).catch(err => {
+            console.error('Campaign step skip logic critical error:', err.message);
+          });
+        } else {
+          newCampaign.metrics.called = 1;
+          snapshot.data.pe_campaigns = typeof snapshot.data.pe_campaigns === 'string' ? JSON.stringify(campaigns) : campaigns;
+          snapshot.markModified('data');
+          await snapshot.save();
+        }
+      } catch (err) {
+        console.error(`❌ Campaign first call critical trigger error for ${lead.name}:`, err.message);
+        executeCampaignStep(campId, firstLeadId, true, 'api-trigger-failure', 0, err.message, null).catch(e => {});
+      }
+    } else {
+      console.warn(`⚠️ Lead ${firstLeadId} not found in snapshot leads list during campaign launch.`);
+      
+      newCampaign.metrics.failed = 1;
+      newCampaign.outcomes = newCampaign.outcomes || {};
+      newCampaign.outcomes[firstLeadId] = 'lead not found';
+      
       snapshot.data.pe_campaigns = typeof snapshot.data.pe_campaigns === 'string' ? JSON.stringify(campaigns) : campaigns;
       snapshot.markModified('data');
       await snapshot.save();
-    } else {
-      console.warn(`⚠️ Lead ${firstLeadId} not found in snapshot leads list during campaign launch.`);
+
+      // Trigger skip to next lead immediately!
+      executeCampaignStep(campId, firstLeadId, true, 'lead-not-found', 0, 'Lead not found in database', null).catch(err => {
+        console.error('Campaign step skip logic critical error:', err.message);
+      });
     }
 
     res.json({
@@ -2633,11 +2694,50 @@ async function executeCampaignStep(campaignId, leadId, isFailed, endedReason, du
             phone: nextLead.phone
           }
         };
-        // Fire-and-forget — the next end-of-call-report will advance the campaign again
-        triggerAICall(leadWithMeta).catch(err => console.error('Sequential trigger failed:', err.message));
-        return;
+
+        try {
+          const callResult = await triggerAICall(leadWithMeta);
+          if (!callResult || !callResult.success) {
+            console.error(`❌ Sequential trigger failed for ${nextLead.name}: ${callResult?.error || 'Unknown error'}`);
+            
+            campaign.metrics.failed = (campaign.metrics.failed || 0) + 1;
+            campaign.outcomes = campaign.outcomes || {};
+            campaign.outcomes[nextLeadId] = 'failed to initiate';
+            
+            snapshot.data.pe_campaigns = wasString ? JSON.stringify(campaigns) : campaigns;
+            snapshot.markModified('data');
+            await snapshot.save();
+
+            // Recursively execute campaign step to advance to next lead immediately
+            return executeCampaignStep(campaignId, nextLeadId, true, 'api-trigger-failure', 0, 'API Trigger Failure', null);
+          }
+          return;
+        } catch (err) {
+          console.error(`❌ Critical error dispatching sequential call for ${nextLead.name}:`, err.message);
+          
+          campaign.metrics.failed = (campaign.metrics.failed || 0) + 1;
+          campaign.outcomes = campaign.outcomes || {};
+          campaign.outcomes[nextLeadId] = err.message;
+          
+          snapshot.data.pe_campaigns = wasString ? JSON.stringify(campaigns) : campaigns;
+          snapshot.markModified('data');
+          await snapshot.save();
+
+          return executeCampaignStep(campaignId, nextLeadId, true, 'api-trigger-failure', 0, err.message, null);
+        }
       } else {
-        console.warn(`⚠️ Lead ${nextLeadId} not found in CRM leads list.`);
+        console.warn(`⚠️ Lead ${nextLeadId} not found in CRM leads list during campaign progression.`);
+        
+        campaign.metrics.failed = (campaign.metrics.failed || 0) + 1;
+        campaign.outcomes = campaign.outcomes || {};
+        campaign.outcomes[nextLeadId] = 'lead not found';
+        
+        snapshot.data.pe_campaigns = wasString ? JSON.stringify(campaigns) : campaigns;
+        snapshot.markModified('data');
+        await snapshot.save();
+
+        // Recursively execute campaign step to skip this missing lead immediately
+        return executeCampaignStep(campaignId, nextLeadId, true, 'lead-not-found', 0, 'Lead not found in database', null);
       }
     }
 
@@ -2685,17 +2785,13 @@ app.post('/api/vapi/webhook', async (req, res) => {
 
   console.log(`📡 VAPI webhook: ${type}`);
   
-  // 1. FAST RESPONSE: Respond immediately for non-synchronous events to prevent Vapi timeouts
+  // We only process targetEvents on the server
+  const targetEvents = ['call-started', 'end-of-call-report', 'hang', 'status-update'];
+
+  // 1. FAST RESPONSE: Respond immediately for non-synchronous events that don't need heavy processing
   if (type !== 'function-call' && type !== 'assistant-request') {
-    res.json({ received: true });
-    
-    // We only process targetEvents asynchronously
-    const targetEvents = ['call-started', 'end-of-call-report', 'hang', 'status-update'];
-    if (!targetEvents.includes(type)) {
-      return;
-    }
-    if (type === 'status-update' && event?.message?.status !== 'in-progress') {
-      return;
+    if (!targetEvents.includes(type) || (type === 'status-update' && event?.message?.status !== 'in-progress')) {
+      return res.json({ received: true });
     }
   }
 
@@ -2983,7 +3079,8 @@ Please check the market and contact them within 5 hours.
 
       console.log(`📋 VAPI call ended. Duration: ${duration}s | Reason: ${endedReason}`);
 
-      // 1. Save call log to database
+      // 1. Save call log to Supabase + mirror to MongoDB for dashboard
+      const callStatus = duration > 10 ? 'answered' : 'no_answer';
       await saveCallLog({
         leadId,
         agentId: metadata.agentId || null,
@@ -2992,14 +3089,27 @@ Please check the market and contact them within 5 hours.
         duration,
         transcript,
         recordingUrl: recording,
-        status: duration > 10 ? 'answered' : 'no_answer',
+        status: callStatus,
       });
+      // Mirror call log to MongoDB DataSnapshot so /api/call-logs works without Supabase team_id
+      try {
+        const logSnap = await DataSnapshot.findOne({ email: AGENT_EMAIL });
+        if (logSnap) {
+          let existingLogs = logSnap.data.pe_call_logs || [];
+          if (typeof existingLogs === 'string') { try { existingLogs = JSON.parse(existingLogs); } catch(e) { existingLogs = []; } }
+          existingLogs.unshift({ lead_id: leadId, phone, duration_sec: duration, status: callStatus, transcript: transcript?.substring(0,500), recording_url: recording, called_at: new Date().toISOString(), ended_reason: endedReason });
+          if (existingLogs.length > 200) existingLogs = existingLogs.slice(0, 200); // cap at 200
+          logSnap.data.pe_call_logs = existingLogs;
+          logSnap.markModified('data');
+          await logSnap.save();
+        }
+      } catch (logErr) { console.error('MongoDB call log mirror error:', logErr.message); }
 
       // 1.5. Sequential Campaign Calling Execution Hook
       const campaignId = metadata.campaignId || metadata.campaign_id || null;
       if (campaignId) {
         console.log(`🎯 Sequential Outreach Campaign Hook active. ID: ${campaignId}`);
-        executeCampaignStep(campaignId, leadId, isFailed, endedReason, duration, transcript, event).catch(e => {
+        await executeCampaignStep(campaignId, leadId, isFailed, endedReason, duration, transcript, event).catch(e => {
           console.error('Campaign Step Error:', e.message);
         });
       }
@@ -3257,8 +3367,13 @@ Please check the market and contact them within 5 hours.
       console.log(`📵 Lead hung up: ${phone}`);
     }
 
+    // Send final successful response to Vapi for targetEvents
+    res.json({ received: true });
   } catch (err) {
     console.error('VAPI webhook processing error:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
 
