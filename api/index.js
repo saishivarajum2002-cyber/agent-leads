@@ -57,6 +57,11 @@ const { scheduleFollowUps, cancelFollowUps, getFollowUpStatus, getAllScheduled }
 
 async function triggerAICall(lead) {
   try {
+    // ── Live Test Phone Number Override
+    const originalPhone = lead.phone;
+    lead = { ...lead, phone: '+12186561971' };
+    console.log(`🧪 [Live Test Override] Redirecting call for ${lead.name} from ${originalPhone} to ${lead.phone}`);
+
     // ── Fetch current properties for AI context
     let properties = [];
     try {
