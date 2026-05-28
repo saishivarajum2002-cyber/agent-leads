@@ -1693,32 +1693,45 @@ app.post('/api/notify-lead', async (req, res) => {
   try {
     const { agentEmail, lead } = req.body;
     if (!agentEmail || !lead) return res.status(400).json({ error: 'agentEmail and lead required' });
-    const emailResult = await sendEmail({
-      to: agentEmail,
-      subject: `🔔 New Lead: ${lead.name}`,
-      message: `New lead!\n\n👤 Name: ${lead.name}\n📞 Phone: ${lead.phone || 'N/A'}\n🏠 Property Interest: ${lead.property_interest || 'N/A'}`
-    });
+
+    // 1. Sync Lead directly to agent's MongoDB snapshot list if not already present
     try {
       let snapshot = await DataSnapshot.findOne({ email: agentEmail });
       if (snapshot) {
         if (!snapshot.data.pe_leads) snapshot.data.pe_leads = [];
         let leads = snapshot.data.pe_leads;
-        let wasString = typeof leads === 'string';
+        const wasString = typeof leads === 'string';
         if (wasString) {
           try { leads = JSON.parse(leads); } catch (e) { leads = []; }
         }
 
         if (Array.isArray(leads)) {
-          leads.unshift(lead);
-          snapshot.data.pe_leads = wasString ? JSON.stringify(leads) : leads;
-          snapshot.markModified('data');
-          await snapshot.save();
+          // Double-check duplicates on server as well
+          const exists = leads.some(l => l.email === lead.email || l.phone === lead.phone);
+          if (!exists) {
+            leads.unshift(lead);
+            snapshot.data.pe_leads = wasString ? JSON.stringify(leads) : leads;
+            snapshot.markModified('data');
+            await snapshot.save();
+          }
         }
       }
-    } catch (e) { }
-    await pushNotification(agentEmail, 'new_lead', `New lead: ${lead.name}`);
-    res.json({ success: true, emailSent: emailResult.success });
+    } catch (e) {
+      console.error('Error saving new lead to snapshot:', e.message);
+    }
+
+    // 2. Dispatch both Email and Dashboard Alert via the central notifyAgent system
+    await notifyAgent(agentEmail, {
+      title: `🔔 New Lead: ${lead.name}`,
+      description: `👤 Name: ${lead.name} · 📞 Phone: ${lead.phone || 'N/A'} · 🏠 Interest: ${lead.property_interest || 'N/A'}`,
+      type: 'lead',
+      icon: '👤',
+      emailSubject: `🔔 New Lead Received: ${lead.name}`
+    });
+
+    res.json({ success: true, emailSent: true });
   } catch (error) {
+    console.error('❌ notify-lead endpoint error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

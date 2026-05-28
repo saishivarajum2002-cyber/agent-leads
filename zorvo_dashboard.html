@@ -7715,9 +7715,30 @@
     function saveLead() {
       const name = document.getElementById('nl-name').value.trim();
       if (!name) { toast('Name is required.', true); return; }
-      const lead = { name, phone: document.getElementById('nl-phone').value, email: document.getElementById('nl-email').value, property_interest: document.getElementById('nl-prop').value, status: document.getElementById('nl-status').value, source: document.getElementById('nl-source').value, notes: document.getElementById('nl-notes').value, score: Math.floor(Math.random() * 35) + 50, pipeline_stage: document.getElementById('nl-status').value === 'Closed' ? 'Closed' : document.getElementById('nl-status').value === 'Contacted' ? 'Negotiation' : 'New' };
-      DB.insert(DB.LEADS, lead);
-      DB.insert(DB.NOTIFICATIONS, { title: 'New Lead: ' + name, description: 'Interested in ' + (lead.property_interest || 'a property'), type: 'lead', icon: '', is_read: false });
+      
+      const email = document.getElementById('nl-email').value.trim();
+      const phone = document.getElementById('nl-phone').value.trim();
+      
+      const lead = { 
+        name, 
+        phone, 
+        email, 
+        property_interest: document.getElementById('nl-prop').value, 
+        status: document.getElementById('nl-status').value, 
+        source: document.getElementById('nl-source').value, 
+        notes: document.getElementById('nl-notes').value, 
+        score: Math.floor(Math.random() * 35) + 50, 
+        pipeline_stage: document.getElementById('nl-status').value === 'Closed' ? 'Closed' : document.getElementById('nl-status').value === 'Contacted' ? 'Negotiation' : 'New' 
+      };
+
+      // Attempt database insertion
+      const insertedLead = DB.insert(DB.LEADS, lead);
+      if (!insertedLead) {
+        toast('❌ A lead with this email address already exists.', true);
+        return; // Prevent modal closing and keep inputs intact!
+      }
+
+      DB.insert(DB.NOTIFICATIONS, { title: 'New Lead: ' + name, description: 'Interested in ' + (lead.property_interest || 'a property'), type: 'lead', icon: '👤', is_read: false });
       state.leads = DB.getAll(DB.LEADS);
       state.notifications = DB.getAll(DB.NOTIFICATIONS);
       renderAll();
@@ -7725,15 +7746,15 @@
       clearLeadForm();
       toast('Lead saved!');
 
-      // Immediately notify agent via email
-      const agentEmail = state.agent?.email;
+      // Immediately notify agent via email and backend sync
+      const agentEmail = state.agent?.email || localStorage.getItem('agent_email') || 'saishivaraju.m2002@gmail.com';
       if (agentEmail) {
         fetch('/api/notify-lead', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agentEmail, lead })
+          body: JSON.stringify({ agentEmail, lead: insertedLead })
         }).then(r => r.json()).then(d => {
-          if (d.emailSent) toast('📧 Lead notification sent to your email!', false);
+          if (d.success) toast('📧 Lead notification alert sent to agent!', false);
         }).catch(err => console.warn('Notify-lead error:', err));
       }
     }
